@@ -1,0 +1,20 @@
+{
+  "name": "formflow-backend",
+  "version": "1.0.0",
+  "description": "FormFlow secure backend proxy interfacing with Google Gemini API for form analysis and document extraction",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/**/*.test.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
+    "zod": "^3.23.8"
+  },
+  "private": true
+}
