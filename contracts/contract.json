@@ -1,0 +1,467 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FormFlow Contract Specification",
+  "version": "1.0.0",
+  "description": "Standardized schema and interface contracts between FormFlow extension modules and the Node.js backend proxy. Sample values only.",
+  "definitions": {
+    "FormField": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Represents an input field detected on a target application form. Never includes password/hidden fields and never includes user values.",
+      "required": ["id", "label", "type", "required", "options", "hint"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Unique identifier, name, or stable selector for the form field."
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Visible human-readable label associated with the field."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "email",
+            "tel",
+            "number",
+            "date",
+            "select",
+            "radio",
+            "checkbox",
+            "textarea",
+            "file"
+          ]
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether the target form enforces this field as mandatory."
+        },
+        "options": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": "Selectable choices for select, radio, or checkbox inputs."
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Placeholder or contextual hint extracted from the field."
+        }
+      }
+    },
+    "AnalyzeFormRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "pageTitle", "fields"],
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": ["en", "kn", "hi"],
+          "description": "Target language for explanations (English, Kannada, or Hindi)."
+        },
+        "pageTitle": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Title or heading of the target application webpage."
+        },
+        "fields": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/definitions/FormField"
+          }
+        }
+      }
+    },
+    "AnalyzeFormFieldAnalysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "explanation", "explanationLocal", "example", "sourceDocument"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Plain English explanation of what this field asks for."
+        },
+        "explanationLocal": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Field explanation translated into the requested language (en, kn, or hi)."
+        },
+        "example": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Synthetic sample entry illustrating the expected format."
+        },
+        "sourceDocument": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Document commonly containing this value (e.g. Aadhaar Card, 10th Marksheet, Income Certificate)."
+        }
+      }
+    },
+    "RequiredDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "why"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Standard document title needed for this form."
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Clear explanation of why this document is needed for the form."
+        }
+      }
+    },
+    "AnalyzeFormResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fields", "requiredDocuments"],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AnalyzeFormFieldAnalysis"
+          }
+        },
+        "requiredDocuments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RequiredDocument"
+          }
+        }
+      }
+    },
+    "ExtractDocumentRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["docType", "mimeType", "data"],
+      "properties": {
+        "docType": {
+          "type": "string",
+          "enum": [
+            "aadhaar",
+            "marksheet_10th",
+            "marksheet_12th",
+            "income_certificate",
+            "caste_certificate",
+            "photo",
+            "signature"
+          ],
+          "description": "Identified category of the uploaded document."
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": ["image/jpeg", "image/png", "application/pdf"],
+          "description": "MIME type of the base64 encoded document data."
+        },
+        "data": {
+          "type": "string",
+          "description": "Base64 encoded file payload (without data URI prefix)."
+        }
+      }
+    },
+    "ExtractedField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "confidence"],
+      "properties": {
+        "value": {
+          "type": ["string", "number", "null"],
+          "description": "Extracted datum or normalized string representation."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score between 0.0 and 1.0 assigned by Gemini extraction."
+        }
+      }
+    },
+    "ExtractDocumentResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["docType", "fields"],
+      "properties": {
+        "docType": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ExtractedField"
+          }
+        }
+      }
+    },
+    "Profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Student local profile stored only in chrome.storage.local. Never stores full Aadhaar number.",
+      "required": [
+        "fullName",
+        "fatherName",
+        "motherName",
+        "dob",
+        "gender",
+        "category",
+        "annualIncome",
+        "aadhaarLast4",
+        "mobile",
+        "email",
+        "address",
+        "pincode",
+        "bankAccount",
+        "ifsc",
+        "course",
+        "institution",
+        "marks"
+      ],
+      "properties": {
+        "fullName": { "type": ["string", "null"], "maxLength": 150 },
+        "fatherName": { "type": ["string", "null"], "maxLength": 150 },
+        "motherName": { "type": ["string", "null"], "maxLength": 150 },
+        "dob": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date of birth in YYYY-MM-DD format."
+        },
+        "gender": {
+          "type": ["string", "null"],
+          "enum": ["Male", "Female", "Other", null]
+        },
+        "category": { "type": ["string", "null"], "maxLength": 50 },
+        "annualIncome": { "type": ["string", "null"], "maxLength": 20 },
+        "aadhaarLast4": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}$",
+          "description": "Only the final 4 digits of Aadhaar. Full 12 digits must NEVER be stored."
+        },
+        "mobile": {
+          "type": ["string", "null"],
+          "pattern": "^[6-9]\\d{9}$",
+          "description": "10-digit mobile number."
+        },
+        "email": { "type": ["string", "null"], "maxLength": 100 },
+        "address": { "type": ["string", "null"], "maxLength": 300 },
+        "pincode": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{6}$",
+          "description": "6-digit postal code."
+        },
+        "bankAccount": { "type": ["string", "null"], "maxLength": 30 },
+        "ifsc": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$",
+          "description": "11-character Indian Financial System Code."
+        },
+        "course": { "type": ["string", "null"], "maxLength": 100 },
+        "institution": { "type": ["string", "null"], "maxLength": 150 },
+        "marks": { "type": ["string", "null"], "maxLength": 20 }
+      }
+    },
+    "FillPlanItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldId", "profileKey", "value", "confidence", "status", "reason"],
+      "properties": {
+        "fieldId": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Target form field identifier."
+        },
+        "profileKey": {
+          "type": "string",
+          "maxLength": 50,
+          "description": "Corresponding key from Profile schema."
+        },
+        "value": {
+          "type": ["string", "number", "boolean", "null"],
+          "description": "Proposed value to populate."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "status": {
+          "type": "string",
+          "enum": ["green", "red"],
+          "description": "green = matched with high confidence; red = missing, incomplete, or low confidence."
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Student-facing justification for matching status."
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["code", "message"],
+          "properties": {
+            "code": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "Standardized uppercase snake_case error code (e.g. RATE_LIMIT_EXCEEDED, INVALID_PAYLOAD)."
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 300,
+              "description": "User-friendly, sanitized error description with no stack traces or server internals."
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "FormFieldSample": {
+      "id": "applicant_full_name",
+      "label": "Full Name (as per SSLC marks card)",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "hint": "Enter name in uppercase (SAMPLE)"
+    },
+    "AnalyzeFormRequestSample": {
+      "language": "kn",
+      "pageTitle": "Post-Matric Scholarship Application Form 2026-27 (SAMPLE)",
+      "fields": [
+        {
+          "id": "applicant_full_name",
+          "label": "Full Name of Student",
+          "type": "text",
+          "required": true,
+          "options": [],
+          "hint": "Full Name (SAMPLE)"
+        },
+        {
+          "id": "annual_family_income",
+          "label": "Annual Family Income (INR)",
+          "type": "number",
+          "required": true,
+          "options": [],
+          "hint": "e.g. 120000 (SAMPLE)"
+        }
+      ]
+    },
+    "AnalyzeFormResponseSample": {
+      "fields": [
+        {
+          "id": "applicant_full_name",
+          "explanation": "Official full name of the student as recorded on identity documents.",
+          "explanationLocal": "ಗುರುತಿನ ದಾಖಲೆಗಳಲ್ಲಿ ನೋಂದಾಯಿಸಲಾದ ವಿದ್ಯಾರ್ಥಿಯ ಅಧಿಕೃತ ಪೂರ್ಣ ಹೆಸರು.",
+          "example": "KAVYA RAMESH SHETTY (SAMPLE)",
+          "sourceDocument": "Aadhaar Card / 10th Marksheet"
+        },
+        {
+          "id": "annual_family_income",
+          "explanation": "Total yearly gross income of all earning family members combined.",
+          "explanationLocal": "ಕುಟುಂಬದ ಎಲ್ಲಾ ದುಡಿಯುವ ಸದಸ್ಯರ ಒಟ್ಟು ವಾರ್ಷಿಕ ಆದಾಯ.",
+          "example": "150000 (SAMPLE)",
+          "sourceDocument": "Income Certificate"
+        }
+      ],
+      "requiredDocuments": [
+        {
+          "name": "Aadhaar Card",
+          "why": "Verifies student identity and last 4 digits for DBT verification."
+        },
+        {
+          "name": "Income Certificate",
+          "why": "Verifies eligibility within government scholarship income threshold."
+        }
+      ]
+    },
+    "ExtractDocumentRequestSample": {
+      "docType": "aadhaar",
+      "mimeType": "image/jpeg",
+      "data": "U0FNUExFX0JBU0U2NF9EQVRB..."
+    },
+    "ExtractDocumentResponseSample": {
+      "docType": "aadhaar",
+      "fields": {
+        "fullName": {
+          "value": "KAVYA RAMESH SHETTY (SAMPLE)",
+          "confidence": 0.98
+        },
+        "dob": {
+          "value": "2004-05-14",
+          "confidence": 0.95
+        },
+        "gender": {
+          "value": "Female",
+          "confidence": 0.99
+        },
+        "aadhaarLast4": {
+          "value": "4321",
+          "confidence": 0.96
+        }
+      }
+    },
+    "ProfileSample": {
+      "fullName": "KAVYA RAMESH SHETTY (SAMPLE)",
+      "fatherName": "RAMESH SHETTY (SAMPLE)",
+      "motherName": "SAVITHA SHETTY (SAMPLE)",
+      "dob": "2004-05-14",
+      "gender": "Female",
+      "category": "OBC-2A (SAMPLE)",
+      "annualIncome": "120000",
+      "aadhaarLast4": "4321",
+      "mobile": "9876543210",
+      "email": "sample.student@example.edu",
+      "address": "123 Saraswathi Nagar, Bengaluru (SAMPLE)",
+      "pincode": "560001",
+      "bankAccount": "987654321001",
+      "ifsc": "SBIN0001234",
+      "course": "B.E. Computer Science (SAMPLE)",
+      "institution": "Government Engineering College (SAMPLE)",
+      "marks": "88.5"
+    },
+    "FillPlanSample": [
+      {
+        "fieldId": "applicant_full_name",
+        "profileKey": "fullName",
+        "value": "KAVYA RAMESH SHETTY (SAMPLE)",
+        "confidence": 0.98,
+        "status": "green",
+        "reason": "Direct match from verified Aadhaar record."
+      },
+      {
+        "fieldId": "caste_sub_category",
+        "profileKey": "category",
+        "value": null,
+        "confidence": 0.0,
+        "status": "red",
+        "reason": "Missing caste certificate document. Please upload certificate to fill."
+      }
+    ],
+    "ErrorResponseSample": {
+      "error": {
+        "code": "INVALID_IMAGE_PAYLOAD",
+        "message": "Uploaded file is not a valid JPEG/PNG or exceeds maximum allowed size (SAMPLE)."
+      }
+    }
+  }
+}

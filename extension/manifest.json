@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "FormFlow - Student Form Assistant",
+  "version": "1.0.0",
+  "description": "Privacy-first Chrome extension assisting students with scholarship and government forms via local AI guidance and autofill.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "FormFlow: Open Form Assistant"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://formflow-backend.example.com/*",
+    "http://localhost:5000/*"
+  ],
+  "background": {
+    "service_worker": "core/background.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
