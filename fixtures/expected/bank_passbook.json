@@ -1,0 +1,33 @@
+{
+  "docType": "bank_passbook",
+  "fields": {
+    "account_holder_name": {
+      "value": "Aarav Ramesh Kumar",
+      "confidence": 0.99
+    },
+    "account_number": {
+      "value": "987654321098",
+      "confidence": 0.99
+    },
+    "bank_name": {
+      "value": "State Bank of India",
+      "confidence": 0.98
+    },
+    "branch_name": {
+      "value": "Koramangala 4th Block Branch",
+      "confidence": 0.95
+    },
+    "ifsc_code": {
+      "value": "SBIN0040123",
+      "confidence": 0.99
+    },
+    "micr_code": {
+      "value": "560002045",
+      "confidence": 0.93
+    },
+    "cif_number": {
+      "value": "89012345678",
+      "confidence": 0.95
+    }
+  }
+}

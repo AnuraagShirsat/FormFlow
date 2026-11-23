@@ -1,0 +1,226 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 2265 >>
+stream
+q
+0.98 0.98 0.97 rg
+0 0 612 792 re f
+0.2 0.3 0.5 RG
+2.0 w
+30 30 552 732 re S
+0.6 0.7 0.8 RG
+0.75 w
+34 34 544 724 re S
+Q
+q
+0.85 0.85 0.85 rg
+/F2 36 Tf
+0.7071 0.7071 -0.7071 0.7071 80 180 cm
+0 0 Td (SAMPLE - FAKE DATA) Tj
+0 50 Td (NOT AN OFFICIAL DOCUMENT - DEMO ONLY) Tj
+0 -50 Td (FOR AUTOMATED FORMFLOW TESTING) Tj
+Q
+BT
+0.1 0.2 0.4 rg
+/F2 16 Tf
+50 720 Td
+(STATE BANK OF INDIA - PASSBOOK) Tj
+ET
+BT
+0.3 0.3 0.3 rg
+/F1 11 Tf
+50 702 Td
+(SAVINGS ACCOUNT CUSTOMER COPY) Tj
+ET
+q
+0.2 0.3 0.5 RG
+1.0 w
+50 690 m 562 690 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 655 Td
+(ACCOUNT HOLDER:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 655 Td
+(AARAV RAMESH KUMAR) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 649 m 552 649 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 631 Td
+(ACCOUNT NUMBER:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 631 Td
+(987654321098) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 625 m 552 625 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 607 Td
+(BANK NAME:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 607 Td
+(STATE BANK OF INDIA) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 601 m 552 601 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 583 Td
+(BRANCH NAME:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 583 Td
+(KORAMANGALA 4TH BLOCK BRANCH) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 577 m 552 577 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 559 Td
+(IFSC CODE:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 559 Td
+(SBIN0040123) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 553 m 552 553 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 535 Td
+(MICR CODE:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 535 Td
+(560002045) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 529 m 552 529 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 511 Td
+(CIF NUMBER:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 511 Td
+(89012345678) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 505 m 552 505 l S
+Q
+BT
+0.2 0.2 0.2 rg
+/F2 10 Tf
+60 487 Td
+(ACCOUNT TYPE:) Tj
+ET
+BT
+0.0 0.0 0.0 rg
+/F1 10 Tf
+220 487 Td
+(SAVINGS BANK) Tj
+ET
+q
+0.90 0.90 0.90 RG
+0.5 w
+60 481 m 552 481 l S
+Q
+q
+0.92 0.94 0.98 rg
+0.6 0.7 0.85 RG
+0.75 w
+60 393 492 60 re B
+Q
+BT
+0.15 0.25 0.45 rg
+/F2 9 Tf
+70 433 Td
+(VERIFICATION & SECURITY WATERMARK NOTICE) Tj
+ET
+BT
+0.35 0.35 0.35 rg
+/F1 8 Tf
+70 417 Td
+(This is synthetic sample data generated specifically for FormFlow automated testing.) Tj
+70 403 Td
+(All personal names, numbers, institutions and identifiers are strictly invented.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000002568 00000 n 
+0000002638 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2713
+%%EOF
