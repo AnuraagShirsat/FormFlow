@@ -61,7 +61,7 @@ The extension communicates with a local Node.js proxy server that securely store
    ```
    Add your Gemini API key and configuration inside `backend/.env`:
    ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
+   GEMINI_API_KEY=
    GEMINI_MODEL=gemini-1.5-flash
    ALLOWED_ORIGIN=chrome-extension://<your-extension-id>
    PORT=5000
@@ -72,3 +72,15 @@ The extension communicates with a local Node.js proxy server that securely store
    npm start
    ```
    The backend will start listening at `http://localhost:5000`.
+
+---
+
+## Pre-Push Security Verification
+
+To safeguard against accidental leaks of API credentials or unauthorized environment files, all contributors must execute the automated secret scan prior to committing or pushing code:
+
+```bash
+node scripts/secret-scan.js
+```
+
+This dependency-free script inspects the repository and extension for Google API keys, OpenAI keys, unmasked Gemini keys, private key headers, and unapproved `.env` files. If any violation is detected, the script exits with code 1. See [SECURITY.md](file:///c:/GitHub%20Projects/FormFlow/docs/SECURITY.md) for full threat modeling.
