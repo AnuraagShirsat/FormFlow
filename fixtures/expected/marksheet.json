@@ -1,0 +1,45 @@
+{
+  "docType": "marksheet",
+  "fields": {
+    "student_name": {
+      "value": "Aarav Ramesh Kumar",
+      "confidence": 0.99
+    },
+    "roll_number": {
+      "value": "KA-2024-108492",
+      "confidence": 0.98
+    },
+    "board_name": {
+      "value": "Karnataka School Examination and Assessment Board",
+      "confidence": 0.96
+    },
+    "exam_name": {
+      "value": "SSLC Examination 2024",
+      "confidence": 0.97
+    },
+    "year_of_passing": {
+      "value": "2024",
+      "confidence": 0.98
+    },
+    "total_marks": {
+      "value": "625",
+      "confidence": 0.98
+    },
+    "marks_obtained": {
+      "value": "582",
+      "confidence": 0.98
+    },
+    "percentage": {
+      "value": "93.12",
+      "confidence": 0.97
+    },
+    "grade": {
+      "value": "A+",
+      "confidence": 0.95
+    },
+    "result": {
+      "value": "PASS",
+      "confidence": 0.99
+    }
+  }
+}

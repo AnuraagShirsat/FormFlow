@@ -1,0 +1,41 @@
+{
+  "docType": "income_certificate",
+  "fields": {
+    "applicant_name": {
+      "value": "Aarav Ramesh Kumar",
+      "confidence": 0.98
+    },
+    "father_name": {
+      "value": "Ramesh Gopal Kumar",
+      "confidence": 0.95
+    },
+    "annual_income": {
+      "value": "85000",
+      "confidence": 0.99
+    },
+    "certificate_number": {
+      "value": "RD00382910482",
+      "confidence": 0.99
+    },
+    "issue_date": {
+      "value": "2026-05-15",
+      "confidence": 0.97
+    },
+    "valid_until": {
+      "value": "2027-05-14",
+      "confidence": 0.95
+    },
+    "issuing_authority": {
+      "value": "Tahsildar Bengaluru North Taluk",
+      "confidence": 0.94
+    },
+    "state": {
+      "value": "Karnataka",
+      "confidence": 0.98
+    },
+    "district": {
+      "value": "Bengaluru Urban",
+      "confidence": 0.95
+    }
+  }
+}
