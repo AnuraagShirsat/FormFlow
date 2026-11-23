@@ -18,6 +18,9 @@ function request(app, options = {}) {
     }
   }
 
+  const clientIp = options.ip || headers['x-forwarded-for'] || '127.0.0.1';
+  headers['x-forwarded-for'] = clientIp;
+
   let bodyBuffer = null;
   if (options.body !== undefined && options.body !== null) {
     const raw = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
@@ -30,20 +33,19 @@ function request(app, options = {}) {
 
   return new Promise((resolve, reject) => {
     const mockSocket = new net.Socket();
-    mockSocket.remoteAddress = '127.0.0.1';
+    mockSocket.remoteAddress = clientIp;
 
     const req = new http.IncomingMessage(mockSocket);
     req.method = method;
     req.url = url;
     req.originalUrl = url;
     req.headers = headers;
+    req.ip = clientIp;
 
     const res = new http.ServerResponse(req);
     res.assignSocket(mockSocket);
 
     let responseData = '';
-    const originalWrite = res.write.bind(res);
-    const originalEnd = res.end.bind(res);
 
     res.write = function (chunk, encoding, callback) {
       if (chunk) {

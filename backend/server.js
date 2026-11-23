@@ -13,13 +13,14 @@ const express = require('express');
 const helmet = require('helmet');
 const config = require('./lib/config');
 const { verifyOrigin, notFoundHandler, errorHandler } = require('./middleware/security');
+const { globalRateLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
 
 // Disable Express fingerprinting header (Attack 1)
 app.disable('x-powered-by');
 
-// Trust reverse proxy (Render, Railway, Cloudflare) for accurate client IP resolution (Attack 7)
+// Trust reverse proxy (Render, Railway, Cloudflare) for accurate client IP resolution (Attacks 7, 9)
 app.set('trust proxy', 1);
 
 // Apply Helmet security headers with restrictive defaults
@@ -29,6 +30,9 @@ app.use(
     crossOriginResourcePolicy: { policy: 'same-site' }
   })
 );
+
+// Apply global rate limiting across all incoming requests (Attacks 7, 9)
+app.use(globalRateLimiter);
 
 // Enforce request payload size limit (max 200kb for /analyze-form)
 app.use(express.json({ limit: '200kb' }));

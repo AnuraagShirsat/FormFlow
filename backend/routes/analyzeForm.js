@@ -4,13 +4,17 @@
  *
  * Implements defenses for:
  * - Attack 5: Zod validation of types, lengths, array size (max 100 fields), enums
+ * - Attack 7: Global and endpoint-specific rate limiting (10 req/min)
  * - Attack 8: Strict stripping of unknown properties
- * - Attack 14: In-memory only, no DB, no logging of request bodies
+ * - Attack 9: Brute-force protection via rate limits and in-memory LRU caching
+ * - Attack 14: In-memory only LRU cache (1-hour TTL, max 500 entries, no personal data)
  */
 
 const express = require('express');
 const router = express.Router();
 const { validateAnalyzeForm } = require('../middleware/validate');
+const { geminiRateLimiter } = require('../middleware/rateLimiter');
+const { formAnalysisCache, generateFormCacheKey } = require('../lib/cache');
 
 /**
  * Standard stub analysis data conforming strictly to contracts/contract.json.
@@ -65,19 +69,28 @@ const STUB_ANALYSIS_RESPONSE = {
 
 /**
  * POST /analyze-form
- * Validates request payload with Zod (validateAnalyzeForm) and returns contract-compliant response.
+ * Applies strict rate limiter (10/min), Zod validation, and in-memory LRU caching.
  */
-router.post('/analyze-form', validateAnalyzeForm, (req, res) => {
+router.post('/analyze-form', geminiRateLimiter, validateAnalyzeForm, (req, res) => {
   const { language, fields } = req.body;
 
-  // Map each input field dynamically to a contract-compliant analysis response
+  // Generate deterministic cache key from normalized field structures and language
+  const cacheKey = generateFormCacheKey(language, fields);
+
+  // Check in-memory LRU cache (Attack 7 & 9)
+  const cached = formAnalysisCache.get(cacheKey);
+  if (cached) {
+    res.setHeader('X-Cache', 'HIT');
+    return res.status(200).json(cached);
+  }
+
+  // Map input fields dynamically to a contract-compliant analysis response
   const mappedFields = fields.map((field) => {
     const known = STUB_ANALYSIS_RESPONSE.fields.find((f) => f.id === field.id);
     if (known) {
-      // Adjust localized explanation depending on requested language
       let localExp = known.explanationLocal;
       if (language === 'hi') {
-        localExp = `सरकारी पहचान दस्तावेजों के अनुसार आपका आधिकारिक पूरा नाम।`;
+        localExp = 'सरकारी पहचान दस्तावेजों के अनुसार आपका आधिकारिक पूरा नाम।';
       } else if (language === 'en') {
         localExp = known.explanation;
       }
@@ -87,7 +100,7 @@ router.post('/analyze-form', validateAnalyzeForm, (req, res) => {
       };
     }
 
-    // Default safe fallback for other input fields
+    // Default safe fallback for other fields
     const label = field.label || field.id;
     const localExp =
       language === 'hi'
@@ -105,10 +118,16 @@ router.post('/analyze-form', validateAnalyzeForm, (req, res) => {
     };
   });
 
-  return res.status(200).json({
+  const responsePayload = {
     fields: mappedFields,
     requiredDocuments: STUB_ANALYSIS_RESPONSE.requiredDocuments
-  });
+  };
+
+  // Cache form structure only (TTL 1 hour, max 500 entries, zero personal data)
+  formAnalysisCache.set(cacheKey, responsePayload);
+
+  res.setHeader('X-Cache', 'MISS');
+  return res.status(200).json(responsePayload);
 });
 
 module.exports = router;

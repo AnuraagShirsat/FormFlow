@@ -1,12 +1,13 @@
 # Documentation: `backend/server.js`
 
 ## 1. What it does
-`server.js` is the central entry point and HTTP orchestration layer for the FormFlow backend proxy. It initializes an Express application, configures security headers via Helmet, strips identifying metadata like `X-Powered-By`, restricts CORS access strictly to the extension origin, sets up JSON body parsing limits (200kb), registers the `/health`, `/analyze-form`, and `/extract-document` routes, and catches all invalid or unknown endpoints with standard contract-compliant error responses.
+`server.js` is the central entry point and HTTP orchestration layer for the FormFlow backend proxy. It initializes an Express application, configures security headers via Helmet, strips identifying metadata like `X-Powered-By`, restricts CORS access strictly to the extension origin, sets up reverse proxy trust for accurate IP resolution on Render, enforces global rate limiting, sets up JSON body parsing limits (200kb), registers the `/health`, `/analyze-form`, and `/extract-document` routes, and catches all invalid or unknown endpoints with standard contract-compliant error responses.
 
 ## 2. How it works technically
 - **Express Initialization:** Sets up the HTTP pipeline with `app.disable('x-powered-by')` to eliminate server fingerprinting.
-- **Reverse Proxy Trust:** Sets `app.set('trust proxy', 1)` so IP-based rate limiting functions accurately behind cloud platforms such as Render, Railway, or AWS.
+- **Reverse Proxy Trust:** Sets `app.set('trust proxy', 1)` so IP-based rate limiting functions accurately behind cloud platforms such as Render, Railway, or AWS by properly extracting client IPs from `X-Forwarded-For`.
 - **Helmet Headers:** Enforces security headers (DNS prefetch control, frameguard, hide powered by, HSTS, no sniff, XSS filter) while disabling CSP since the backend serves pure JSON API payloads.
+- **Global Rate Limiting:** Mounts `globalRateLimiter` (`RATE_LIMIT_PER_MIN`, default 30 req/min) across all incoming traffic to protect server availability.
 - **Payload Limiting:** Integrates `express.json({ limit: '200kb' })` globally to mitigate denial-of-service attempts via oversized payloads before any route handlers execute.
 - **Origin Gatekeeping:** Mounts the `verifyOrigin` middleware before API routes to validate the client's `Origin` header against `ALLOWED_ORIGIN`.
 - **Route Mounting:** Mounts `GET /health` inline returning `{ ok: true }` only, mounts `require('./routes/analyzeForm')`, and registers Kartik's document extraction route with a single line: `app.use(require('./routes/extractDocument'))`.
@@ -18,7 +19,7 @@
 - **Q: Why is there no admin or dashboard route?**
   - **A:** FormFlow has zero admin routes, zero debug endpoints, and zero databases by design. Eliminating admin areas entirely eliminates privilege escalation, credential stuffing, and session hijacking attack vectors.
 - **Q: How does the server respond to unmapped routes?**
-  - **A:** It returns HTTP 404 with a strict contract JSON object: `{ "error": { "code": "not_found", "message": "Route not found" } }`. It never renders default HTML error pages or stack traces.
+  - **A:** It returns HTTP 404 with a strict contract JSON object: `{ "error": { "code": "not_found", message: "Route not found" } }`. It never renders default HTML error pages or stack traces.
 
 ## 4. What to know before the judges
 - The server is stateless: no cookies, no sessions, no user databases, and no local disk storage of user inputs.
@@ -28,6 +29,7 @@
 ## 5. Security checks done and judge questions about security
 - **Security Checks Done:**
   - Verified `x-powered-by` header is completely disabled.
+  - Verified global and Gemini-specific rate limiting enforcement.
   - Verified request body size limit is constrained to 200kb.
   - Verified unknown routes return clean JSON 404 without stack traces or framework banners.
   - Verified all error responses conform to `{ error: { code: string, message: string } }`.
