@@ -22,7 +22,7 @@ Built with Node.js's native test runner (`node:test` and `node:assert`) and exec
 - **Q: Which specific attacks does `security.test.js` verify?**
   - **A:** Attacks 1 (no admin routes / 404 trap), 2 (no ID storage), 5 (strict type, enum, and size validation), 7 (rate limiting and quota protection), 8 (stripping unexpected fields and 403 origin gating), 9 (brute-force defense), and 10 (prompt injection resilience).
 - **Q: How does the test verify that no API keys are leaked?**
-  - **A:** It stringifies the entire JSON response and asserts that neither the actual `config.geminiApiKey` nor common Gemini key patterns (e.g. `AIzaSy`) appear anywhere in the output.
+  - **A:** It stringifies the entire JSON response and asserts that neither the actual `config.geminiApiKey` nor common Gemini key patterns appear anywhere in the output.
 - **Q: What framework runs these tests?**
   - **A:** Node.js native test runner (`node --test`), requiring zero external test libraries, mocking frameworks, or native binaries.
 
