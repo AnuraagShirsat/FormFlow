@@ -1,0 +1,41 @@
+{
+  "docType": "caste_certificate",
+  "fields": {
+    "applicant_name": {
+      "value": "Aarav Ramesh Kumar",
+      "confidence": 0.98
+    },
+    "father_name": {
+      "value": "Ramesh Gopal Kumar",
+      "confidence": 0.95
+    },
+    "category": {
+      "value": "Category 2A (OBC)",
+      "confidence": 0.96
+    },
+    "caste": {
+      "value": "Kuruba",
+      "confidence": 0.96
+    },
+    "certificate_number": {
+      "value": "RD00481920391",
+      "confidence": 0.99
+    },
+    "issue_date": {
+      "value": "2025-08-10",
+      "confidence": 0.97
+    },
+    "issuing_authority": {
+      "value": "Tahsildar Bengaluru North Taluk",
+      "confidence": 0.94
+    },
+    "state": {
+      "value": "Karnataka",
+      "confidence": 0.98
+    },
+    "district": {
+      "value": "Bengaluru Urban",
+      "confidence": 0.95
+    }
+  }
+}

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FormFlow Scanner Verification Test (SAMPLE)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      line-height: 1.5;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      margin-bottom: 24px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    input[type="text"], input[type="email"], input[type="number"], input[type="date"], select, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #94a3b8;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .radio-group label {
+      display: inline-block;
+      font-weight: normal;
+      margin-right: 16px;
+    }
+    .btn {
+      background: #1a73e8;
+      color: #fff;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn:hover {
+      background: #1557b0;
+    }
+    pre {
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      max-height: 400px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      background: #dcfce7;
+      color: #166534;
+      margin-bottom: 12px;
+    }
+    .notice {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 12px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>FormFlow Form Scanner Test Page (SAMPLE)</h1>
+    <div class="notice">
+      <strong>Note:</strong> This is a standalone test fixture containing synthetic mock fields (all labeled SAMPLE).
+      Comprehensive portal verification will be executed on <code>/mock-form</code> once Himani merges the mock portal layout.
+    </div>
+
+    <div class="card">
+      <h2>Sample Scholarship Application Form</h2>
+      <form id="sample-form">
+        <!-- 1. Text input with label[for] -->
+        <div class="form-group">
+          <label for="applicant_name">Full Name (as per SSLC card)</label>
+          <input type="text" id="applicant_name" name="applicant_name" placeholder="e.g. KAVYA RAMESH SHETTY (SAMPLE)" required>
+          <small class="help-text">Enter your official name in capital letters</small>
+        </div>
+
+        <!-- 2. Wrapping label with date input -->
+        <div class="form-group">
+          <label>
+            Date of Birth
+            <input type="date" id="dob_field" name="dob" required>
+          </label>
+        </div>
+
+        <!-- 3. Number input with aria-label -->
+        <div class="form-group">
+          <label for="annual_income">Annual Family Income (INR)</label>
+          <input type="number" id="annual_income" name="income" aria-label="Annual Family Income in Rupees" placeholder="120000" required>
+        </div>
+
+        <!-- 4. Select dropdown -->
+        <div class="form-group">
+          <label for="category_select">Social Category / Caste</label>
+          <select id="category_select" name="category" required>
+            <option value="">-- Select Category --</option>
+            <option value="General">General (SAMPLE)</option>
+            <option value="OBC-2A">OBC Category 2A (SAMPLE)</option>
+            <option value="SC">Scheduled Caste (SAMPLE)</option>
+            <option value="ST">Scheduled Tribe (SAMPLE)</option>
+          </select>
+        </div>
+
+        <!-- 5. Radio group -->
+        <div class="form-group">
+          <label>Gender</label>
+          <div class="radio-group">
+            <label><input type="radio" name="gender" value="Male"> Male</label>
+            <label><input type="radio" name="gender" value="Female"> Female</label>
+            <label><input type="radio" name="gender" value="Other"> Other</label>
+          </div>
+        </div>
+
+        <!-- 6. File input -->
+        <div class="form-group">
+          <label for="photo_upload">Applicant Passport Photo</label>
+          <input type="file" id="photo_upload" name="photo" accept="image/jpeg,image/png">
+        </div>
+
+        <!-- 7. Textarea -->
+        <div class="form-group">
+          <label for="permanent_address">Permanent Residential Address</label>
+          <textarea id="permanent_address" name="address" rows="3" placeholder="Enter full postal address (SAMPLE)"></textarea>
+        </div>
+
+        <!-- 8. Checkbox -->
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="declaration_check" name="declaration" required>
+            I hereby certify that all submitted information is accurate (SAMPLE)
+          </label>
+        </div>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e2e8f0;">
+        <h3>Security Negative Checks (Must be SKIPPED by Scanner):</h3>
+
+        <!-- Security Check: Password field must be skipped -->
+        <div class="form-group">
+          <label for="secret_pin">Account Password / PIN (MUST BE SKIPPED)</label>
+          <input type="password" id="secret_pin" name="password" value="sensitive123">
+        </div>
+
+        <!-- Security Check: Hidden field must be skipped -->
+        <input type="hidden" name="internal_csrf_token" value="csrf_token_sample_123">
+
+        <!-- Security Check: Disabled field must be skipped -->
+        <div class="form-group">
+          <label for="disabled_field">Deprecated Field (Disabled - MUST BE SKIPPED)</label>
+          <input type="text" id="disabled_field" name="disabled_data" disabled value="inactive">
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <button id="run-scanner-btn" class="btn">Run FormFlow Scanner</button>
+      <div id="test-status" style="margin-top: 16px;"></div>
+      <h3>Scanned FormField Output:</h3>
+      <pre id="scanner-output">// Click "Run FormFlow Scanner" above to test scanForm()...</pre>
+    </div>
+  </div>
+
+  <!-- Include core scripts -->
+  <script src="../extension/core/content.js"></script>
+  <script src="../extension/core/scanner.js"></script>
+
+  <script>
+    // Test execution runner
+    document.getElementById('run-scanner-btn').addEventListener('click', function () {
+      if (!window.FormFlow || typeof window.FormFlow.scanForm !== 'function') {
+        alert('FormFlow scanner is not loaded!');
+        return;
+      }
+
+      const startTime = performance.now();
+      const fields = window.FormFlow.scanForm();
+      const durationMs = (performance.now() - startTime).toFixed(1);
+
+      // Render output using textContent only (no innerHTML)
+      const outputElem = document.getElementById('scanner-output');
+      outputElem.textContent = JSON.stringify(fields, null, 2);
+
+      // Verify security and contract rules
+      const hasPassword = fields.some(f => f.type === 'password' || f.id === 'secret_pin');
+      const hasHidden = fields.some(f => f.type === 'hidden' || f.id.indexOf('csrf') !== -1);
+      const hasDisabled = fields.some(f => f.id === 'disabled_field');
+      const allHaveStableIds = fields.every(f => Boolean(f.id && f.id.length <= 64));
+      const allUnderCharLimits = fields.every(f => f.label.length <= 200 && f.hint.length <= 200);
+
+      const statusElem = document.getElementById('test-status');
+      statusElem.textContent = ''; // clear
+
+      const badge = document.createElement('div');
+      badge.className = 'status-badge';
+
+      if (!hasPassword && !hasHidden && !hasDisabled && allHaveStableIds && allUnderCharLimits) {
+        badge.textContent = 'PASSED: ' + fields.length + ' fields discovered in ' + durationMs + 'ms. Security invariants satisfied (0 passwords, 0 hidden, 0 disabled).';
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#166534';
+      } else {
+        badge.textContent = 'FAILED: One or more scanner invariants were violated.';
+        badge.style.background = '#fee2e2';
+        badge.style.color = '#991b1b';
+      }
+
+      statusElem.appendChild(badge);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "ssp-karnataka",
+    "name": "Karnataka State Scholarship Portal (SSP Post-Matric)",
+    "photo": {
+      "widthPx": 200,
+      "heightPx": 230,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 140,
+      "heightPx": 60,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://ssp.postmatric.karnataka.gov.in",
+    "lastVerified": "2026-11-20",
+    "verified": true,
+    "notes": "Official Post-Matric scholarship portal guidelines for Karnataka State departments."
+  },
+  {
+    "id": "nsp-national",
+    "name": "National Scholarship Portal (NSP)",
+    "photo": {
+      "widthPx": 200,
+      "heightPx": 230,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 140,
+      "heightPx": 60,
+      "maxKB": 20,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://scholarships.gov.in",
+    "lastVerified": "2026-11-20",
+    "verified": true,
+    "notes": "Ministry of Electronics & Information Technology / Department of Higher Education portal specifications."
+  },
+  {
+    "id": "nta-jeemain",
+    "name": "National Testing Agency (NTA JEE / NEET / CUET)",
+    "photo": {
+      "widthPx": 350,
+      "heightPx": 450,
+      "maxKB": 200,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 350,
+      "heightPx": 150,
+      "maxKB": 100,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://jeemain.nta.nic.in",
+    "lastVerified": "2026-11-20",
+    "verified": true,
+    "notes": "NTA Information Bulletin standard upload specifications (3.5 cm x 4.5 cm photo, 3.5 cm x 1.5 cm signature)."
+  },
+  {
+    "id": "upsc-online",
+    "name": "Union Public Service Commission (UPSC Online OTR)",
+    "photo": {
+      "widthPx": 350,
+      "heightPx": 350,
+      "maxKB": 300,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 350,
+      "heightPx": 350,
+      "maxKB": 100,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://upsconline.nic.in",
+    "lastVerified": "2026-11-20",
+    "verified": true,
+    "notes": "UPSC Online One Time Registration (OTR) module specifications; square aspect ratio 1:1."
+  },
+  {
+    "id": "ibps-exam",
+    "name": "Institute of Banking Personnel Selection (IBPS CRP Exams)",
+    "photo": {
+      "widthPx": 200,
+      "heightPx": 230,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 140,
+      "heightPx": 60,
+      "maxKB": 20,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://www.ibps.in",
+    "lastVerified": "2026-11-20",
+    "verified": true,
+    "notes": "IBPS Common Recruitment Process standard scanning and upload guidelines."
+  },
+  {
+    "id": "ssc-cgl",
+    "name": "Staff Selection Commission (SSC Examination Portal)",
+    "photo": {
+      "widthPx": 200,
+      "heightPx": 230,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 140,
+      "heightPx": 60,
+      "maxKB": 20,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://ssc.gov.in",
+    "lastVerified": "2026-11-20",
+    "verified": true,
+    "notes": "SSC online application portal specifications for legacy/OTR photo and scanned signatures."
+  },
+  {
+    "id": "mock-scholarship-portal",
+    "name": "FormFlow Mock Scholarship Portal (Hackathon Test Form)",
+    "photo": {
+      "widthPx": 200,
+      "heightPx": 200,
+      "maxKB": 100,
+      "formats": ["jpeg", "jpg", "png"]
+    },
+    "signature": {
+      "widthPx": 200,
+      "heightPx": 100,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg", "png"]
+    },
+    "sourceUrl": "http://localhost:3000/mock-form",
+    "lastVerified": "2026-11-23",
+    "verified": false,
+    "notes": "Placeholder configuration for Himani's mock test form."
+  },
+  {
+    "id": "generic-default",
+    "name": "FormFlow Generic Fallback Profile",
+    "photo": {
+      "widthPx": 200,
+      "heightPx": 230,
+      "maxKB": 50,
+      "formats": ["jpeg", "jpg"]
+    },
+    "signature": {
+      "widthPx": 140,
+      "heightPx": 60,
+      "maxKB": 30,
+      "formats": ["jpeg", "jpg"]
+    },
+    "sourceUrl": "https://formflow.local/specs/default",
+    "lastVerified": "2026-11-23",
+    "verified": false,
+    "notes": "Placeholder fallback configuration when the host portal is unrecognized."
+  }
+]
