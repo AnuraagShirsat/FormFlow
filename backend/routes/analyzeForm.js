@@ -2,116 +2,113 @@
  * Form Analysis Route (/analyze-form)
  * Owner: Ivan (Backend Engineer)
  *
- * Initial implementation: Contract Stub returning fixed structured JSON
- * adhering to the contract so extension teammates (Himani and Anuraag) can
- * immediately integrate against the expected response schema.
+ * Implements defenses for:
+ * - Attack 5: Zod validation of types, lengths, array size (max 100 fields), enums
+ * - Attack 8: Strict stripping of unknown properties
+ * - Attack 14: In-memory only, no DB, no logging of request bodies
  */
 
 const express = require('express');
 const router = express.Router();
+const { validateAnalyzeForm } = require('../middleware/validate');
 
 /**
- * Fixed mock analysis response adhering to the contract specification.
- * All example data is synthetic and explicitly labelled SAMPLE.
+ * Standard stub analysis data conforming strictly to contracts/contract.json.
+ * All sample values are synthetic and labelled SAMPLE.
  */
 const STUB_ANALYSIS_RESPONSE = {
   fields: [
     {
-      id: 'full_name',
-      explanationEn: 'Your official full name as printed on your government photo ID.',
-      explanationSelected: 'ನಿಮ್ಮ ಅಧಿಕೃತ ಪೂರ್ಣ ಹೆಸರು ನಿಮ್ಮ ಸರ್ಕಾರಿ ಗುರುತಿನ ಚೀಟಿಯಲ್ಲಿ ನಮೂದಿಸಿದಂತೆ.',
-      explanation: {
-        en: 'Your official full name as printed on your government photo ID.',
-        selected: 'ನಿಮ್ಮ ಅಧಿಕೃತ ಪೂರ್ಣ ಹೆಸರು ನಿಮ್ಮ ಸರ್ಕಾರಿ ಗುರುತಿನ ಚೀಟಿಯಲ್ಲಿ ನಮೂದಿಸಿದಂತೆ.'
-      },
-      example: 'SAMPLE: Priya Ramesh Patil',
-      document: 'Aadhaar Card'
+      id: 'applicant_full_name',
+      explanation: 'Your official full name as recorded on government identity documents.',
+      explanationLocal: 'ಗುರುತಿನ ದಾಖಲೆಗಳಲ್ಲಿ ನೋಂದಾಯಿಸಲಾದ ನಿಮ್ಮ ಅಧಿಕೃತ ಪೂರ್ಣ ಹೆಸರು.',
+      example: 'KAVYA RAMESH SHETTY (SAMPLE)',
+      sourceDocument: 'Aadhaar Card / 10th Marksheet'
     },
     {
       id: 'aadhaar_number',
-      explanationEn: 'Your 12-digit unique Aadhaar identification number issued by UIDAI.',
-      explanationSelected: 'ನಿಮ್ಮ 12 ಅಂಕಿಯ ಅನನ್ಯ ಆಧಾರ್ ಗುರುತಿನ ಸಂಖ್ಯೆ.',
-      explanation: {
-        en: 'Your 12-digit unique Aadhaar identification number issued by UIDAI.',
-        selected: 'ನಿಮ್ಮ 12 ಅಂಕಿಯ ಅನನ್ಯ ಆಧಾರ್ ಗುರುತಿನ ಸಂಖ್ಯೆ.'
-      },
-      example: 'SAMPLE: 1234 5678 9012',
-      document: 'Aadhaar Card'
+      explanation: 'Your 12-digit unique Aadhaar identification number issued by UIDAI.',
+      explanationLocal: 'ನಿಮ್ಮ 12 ಅಂಕಿಯ ಅನನ್ಯ ಆಧಾರ್ ಗುರುತಿನ ಸಂಖ್ಯೆ.',
+      example: '1234 5678 9012 (SAMPLE)',
+      sourceDocument: 'Aadhaar Card'
     },
     {
-      id: 'annual_income',
-      explanationEn: 'Total gross annual family income from all revenue sources.',
-      explanationSelected: 'ಎಲ್ಲಾ ಮೂಲಗಳಿಂದ ಕುಟುಂಬದ ಒಟ್ಟು ವಾರ್ಷಿಕ ಆದಾಯ.',
-      explanation: {
-        en: 'Total gross annual family income from all revenue sources.',
-        selected: 'ಎಲ್ಲಾ ಮೂಲಗಳಿಂದ ಕುಟುಂಬದ ಒಟ್ಟು ವಾರ್ಷಿಕ ಆದಾಯ.'
-      },
-      example: 'SAMPLE: 150000',
-      document: 'Income Certificate'
+      id: 'annual_family_income',
+      explanation: 'Total yearly gross income of all earning family members combined.',
+      explanationLocal: 'ಕುಟುಂಬದ ಎಲ್ಲಾ ದುಡಿಯುವ ಸದಸ್ಯರ ಒಟ್ಟು ವಾರ್ಷಿಕ ಆದಾಯ.',
+      example: '150000 (SAMPLE)',
+      sourceDocument: 'Income Certificate'
     },
     {
       id: 'tenth_marks_percentage',
-      explanationEn: 'Aggregate percentage marks obtained in the Class 10 / SSLC examination.',
-      explanationSelected: '10ನೇ ತರಗತಿ ಅಥವಾ SSLC ಬೋರ್ಡ್ ಪರೀಕ್ಷೆಯಲ್ಲಿ ಪಡೆದ ಒಟ್ಟು ಶೇಕಡಾವಾರು ಅಂಕಗಳು.',
-      explanation: {
-        en: 'Aggregate percentage marks obtained in the Class 10 / SSLC examination.',
-        selected: '10ನೇ ತರಗತಿ ಅಥವಾ SSLC ಬೋರ್ಡ್ ಪರೀಕ್ಷೆಯಲ್ಲಿ ಪಡೆದ ಒಟ್ಟು ಶೇಕಡಾವಾರು ಅಂಕಗಳು.'
-      },
-      example: 'SAMPLE: 88.50',
-      document: 'Marksheet'
+      explanation: 'Aggregate percentage marks obtained in the Class 10 / SSLC examination.',
+      explanationLocal: '10ನೇ ತರಗತಿ ಅಥವಾ SSLC ಬೋರ್ಡ್ ಪರೀಕ್ಷೆಯಲ್ಲಿ ಪಡೆದ ಒಟ್ಟು ಶೇಕಡಾವಾರು ಅಂಕಗಳು.',
+      example: '88.50 (SAMPLE)',
+      sourceDocument: 'Marksheet'
     }
   ],
   requiredDocuments: [
-    'Aadhaar Card',
-    'Income Certificate',
-    'Marksheet'
+    {
+      name: 'Aadhaar Card',
+      why: 'Verifies student identity and last 4 digits for DBT verification.'
+    },
+    {
+      name: 'Income Certificate',
+      why: 'Verifies eligibility within government scholarship income threshold.'
+    },
+    {
+      name: 'Marksheet',
+      why: 'Verifies qualifying educational criteria and merit scores.'
+    }
   ]
 };
 
 /**
  * POST /analyze-form
- * Returns contract-compliant stub response.
+ * Validates request payload with Zod (validateAnalyzeForm) and returns contract-compliant response.
  */
-router.post('/analyze-form', (req, res) => {
-  // If specific fields were sent in request, map them dynamically to stub format
-  const requestedFields = Array.isArray(req.body && req.body.fields) ? req.body.fields : [];
-  const requestedLang = (req.body && req.body.language) || 'en';
+router.post('/analyze-form', validateAnalyzeForm, (req, res) => {
+  const { language, fields } = req.body;
 
-  if (requestedFields.length > 0) {
-    const dynamicFields = requestedFields.map((field) => {
-      const match = STUB_ANALYSIS_RESPONSE.fields.find((f) => f.id === field.id);
-      if (match) {
-        return match;
+  // Map each input field dynamically to a contract-compliant analysis response
+  const mappedFields = fields.map((field) => {
+    const known = STUB_ANALYSIS_RESPONSE.fields.find((f) => f.id === field.id);
+    if (known) {
+      // Adjust localized explanation depending on requested language
+      let localExp = known.explanationLocal;
+      if (language === 'hi') {
+        localExp = `सरकारी पहचान दस्तावेजों के अनुसार आपका आधिकारिक पूरा नाम।`;
+      } else if (language === 'en') {
+        localExp = known.explanation;
       }
       return {
-        id: field.id,
-        explanationEn: `Please enter the required information for ${field.label || field.id}.`,
-        explanationSelected: requestedLang === 'hi'
-          ? `कृपया ${field.label || field.id} के लिए आवश्यक जानकारी दर्ज करें।`
-          : requestedLang === 'kn'
-          ? `${field.label || field.id} ಗಾಗಿ ಅಗತ್ಯ ಮಾಹಿತಿಯನ್ನು ನಮೂದಿಸಿ.`
-          : `Please enter the required information for ${field.label || field.id}.`,
-        explanation: {
-          en: `Please enter the required information for ${field.label || field.id}.`,
-          selected: requestedLang === 'hi'
-            ? `कृपया ${field.label || field.id} के लिए आवश्यक जानकारी दर्ज करें।`
-            : requestedLang === 'kn'
-            ? `${field.label || field.id} ಗಾಗಿ ಅಗತ್ಯ ಮಾಹಿತಿಯನ್ನು ನಮೂದಿಸಿ.`
-            : `Please enter the required information for ${field.label || field.id}.`
-        },
-        example: `SAMPLE: ${field.label || field.id} sample value`,
-        document: 'General Document'
+        ...known,
+        explanationLocal: localExp
       };
-    });
+    }
 
-    return res.status(200).json({
-      fields: dynamicFields,
-      requiredDocuments: STUB_ANALYSIS_RESPONSE.requiredDocuments
-    });
-  }
+    // Default safe fallback for other input fields
+    const label = field.label || field.id;
+    const localExp =
+      language === 'hi'
+        ? `${label} के लिए आवश्यक जानकारी दर्ज करें।`
+        : language === 'kn'
+        ? `${label} ಗಾಗಿ ಅಗತ್ಯ ಮಾಹಿತಿಯನ್ನು ನಮೂದಿಸಿ.`
+        : `Please enter the required information for ${label}.`;
 
-  // Fallback to static stub response
-  return res.status(200).json(STUB_ANALYSIS_RESPONSE);
+    return {
+      id: field.id,
+      explanation: `Please enter the required information for ${label}.`,
+      explanationLocal: localExp,
+      example: `${label} (SAMPLE)`,
+      sourceDocument: 'Supporting Document'
+    };
+  });
+
+  return res.status(200).json({
+    fields: mappedFields,
+    requiredDocuments: STUB_ANALYSIS_RESPONSE.requiredDocuments
+  });
 });
 
 module.exports = router;

@@ -4,7 +4,7 @@
  *
  * Implements defenses for:
  * - Attack 1: No debug/admin/status/config routes. Unknown routes return plain 404 { error: { code: "not_found" } }.
- * - Attack 2: No stored IDs, no sessions, no cookies.
+ * - Attack 2: No stored IDs, no sessions, no cookies, no database.
  * - Attack 8: Reject unauthorized origins with HTTP 403.
  * - Attack 14: Never leak stack traces or internal details in responses. Do not log request bodies.
  */
@@ -26,7 +26,7 @@ function verifyOrigin(req, res, next) {
 
   // If ALLOWED_ORIGIN is configured
   if (config.allowedOrigin) {
-    // If request contains an Origin header and it doesn't match ALLOWED_ORIGIN, reject
+    // If request contains an Origin header and it doesn't match ALLOWED_ORIGIN, reject with 403
     if (origin && origin !== config.allowedOrigin) {
       return res.status(403).json({
         error: {
@@ -36,8 +36,7 @@ function verifyOrigin(req, res, next) {
       });
     }
 
-    // In production, require the Origin header for state-changing or API requests
-    // while permitting local testing if origin header is omitted
+    // In production, enforce that an Origin header must be provided
     if (process.env.NODE_ENV === 'production' && !origin) {
       return res.status(403).json({
         error: {
@@ -71,7 +70,8 @@ function verifyOrigin(req, res, next) {
 function notFoundHandler(req, res) {
   res.status(404).json({
     error: {
-      code: 'not_found'
+      code: 'not_found',
+      message: 'Route not found'
     }
   });
 }
@@ -104,10 +104,12 @@ function errorHandler(err, req, res, next) {
 
   const status = typeof err.status === 'number' ? err.status : 500;
   const code = err.code || (status === 400 ? 'bad_request' : 'internal_error');
+  const message = err.message && status < 500 ? err.message : 'An internal server error occurred';
 
   res.status(status).json({
     error: {
-      code: code
+      code: code,
+      message: message
     }
   });
 }

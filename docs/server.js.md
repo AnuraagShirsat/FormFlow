@@ -10,7 +10,7 @@
 - **Payload Limiting:** Integrates `express.json({ limit: '200kb' })` globally to mitigate denial-of-service attempts via oversized payloads before any route handlers execute.
 - **Origin Gatekeeping:** Mounts the `verifyOrigin` middleware before API routes to validate the client's `Origin` header against `ALLOWED_ORIGIN`.
 - **Route Mounting:** Mounts `GET /health` inline returning `{ ok: true }` only, mounts `require('./routes/analyzeForm')`, and registers Kartik's document extraction route with a single line: `app.use(require('./routes/extractDocument'))`.
-- **404 & Error Traps:** Catches unmapped routes with `notFoundHandler` returning `{ error: { code: "not_found" } }` and formats unhandled exceptions with `errorHandler`.
+- **404 & Error Traps:** Catches unmapped routes with `notFoundHandler` returning `{ error: { code: "not_found", message: "Route not found" } }` and formats unhandled exceptions with `errorHandler`.
 
 ## 3. Judge questions with short answers
 - **Q: Why does the extension need a backend proxy instead of calling the Gemini API directly from the client?**
@@ -18,7 +18,7 @@
 - **Q: Why is there no admin or dashboard route?**
   - **A:** FormFlow has zero admin routes, zero debug endpoints, and zero databases by design. Eliminating admin areas entirely eliminates privilege escalation, credential stuffing, and session hijacking attack vectors.
 - **Q: How does the server respond to unmapped routes?**
-  - **A:** It returns HTTP 404 with a strict contract JSON object: `{ "error": { "code": "not_found" } }`. It never renders default HTML error pages or stack traces.
+  - **A:** It returns HTTP 404 with a strict contract JSON object: `{ "error": { "code": "not_found", "message": "Route not found" } }`. It never renders default HTML error pages or stack traces.
 
 ## 4. What to know before the judges
 - The server is stateless: no cookies, no sessions, no user databases, and no local disk storage of user inputs.
@@ -30,9 +30,9 @@
   - Verified `x-powered-by` header is completely disabled.
   - Verified request body size limit is constrained to 200kb.
   - Verified unknown routes return clean JSON 404 without stack traces or framework banners.
-  - Verified all error responses conform to `{ error: { code: string } }`.
+  - Verified all error responses conform to `{ error: { code: string, message: string } }`.
 - **Judge Security Questions:**
   - **Q: Can an attacker induce memory exhaustion by sending gigabyte-sized JSON payloads?**
-    - **A:** No. `express.json({ limit: '200kb' })` immediately aborts the connection with HTTP 400 (`entity.too.large`) before the payload can consume system RAM.
+    - **A:** No. `express.json({ limit: '200kb' })` immediately aborts the connection with HTTP 400 (`bad_request`) before the payload can consume system RAM.
   - **Q: How do you prevent information leakage in production crashes?**
     - **A:** The centralized error middleware captures all exceptions, logs internal operational diagnostics server-side without request bodies, and responds only with generic error codes (`bad_request`, `internal_error`), never exposing stack traces or filenames.
