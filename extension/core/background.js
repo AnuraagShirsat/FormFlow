@@ -151,13 +151,20 @@ async function callBackendProxy(endpoint, payload) {
 async function injectExtensionScripts(tabId) {
   if (!tabId) return;
 
-  // Order of dependencies: config -> content namespace bridge -> scanner -> filler -> widget UI
+  // Order of dependencies: config -> content namespace bridge -> scanner -> matcher -> filler -> widget UI helpers -> widget UI
   const candidateScripts = [
     'core/config.js',
     'core/content.js',
     'core/scanner.js',
-    'filler/scanner.js',
+    'filler/matcher.js',
     'filler/filler.js',
+    'ui/domUtil.js',
+    'ui/uploadChecks.js',
+    'ui/widgetStyles.js',
+    'ui/dummyData.js',
+    'ui/imageFixer.js',
+    'ui/review.js',
+    'ui/imageFixerPanel.js',
     'ui/widget.js'
   ];
 
@@ -230,6 +237,17 @@ async function handleMessage(message, sender) {
         return response || { success: true, fields: [] };
       } catch (err) {
         return { success: false, error: { code: 'SCAN_FAILED', message: 'Form scanner script is not active on this page' } };
+      }
+    }
+
+    case 'GET_SPECS': {
+      try {
+        const specsUrl = chrome.runtime.getURL('filler/specs.json');
+        const res = await fetch(specsUrl);
+        const specs = await res.json();
+        return { success: true, data: { specs: specs } };
+      } catch (err) {
+        return { success: false, error: { code: 'SPECS_LOAD_FAILED', message: 'Unable to load portal specifications' } };
       }
     }
 

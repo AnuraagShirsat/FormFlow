@@ -5,7 +5,7 @@ The FormFlow contract establishes a strict, immutable interface boundary between
 - Defines the scanning structure (`FormField`) that extracts page elements without collecting passwords, hidden inputs, or typed user values.
 - Specifies API request/response payloads for the Node.js backend proxy (`/analyze-form` and `/extract-document`).
 - Standardizes the student profile schema persisted exclusively inside `chrome.storage.local`.
-- Dictates internal Chrome runtime message types between content scripts and the background service worker (`SCAN_FORM`, `ANALYZE_FORM`, `EXTRACT_DOCUMENT`, `GET_PROFILE`, `SAVE_PROFILE`, `CLEAR_PROFILE`), with standardized reply envelopes (`{ success: true, data }` or `{ success: false, error: { code, message } }`, and `{ success: boolean }` for clearing data).
+- Dictates internal Chrome runtime message types between content scripts and the background service worker (`SCAN_FORM`, `ANALYZE_FORM`, `EXTRACT_DOCUMENT`, `GET_PROFILE`, `SAVE_PROFILE`, `CLEAR_PROFILE`, `GET_SPECS`), with standardized reply envelopes (`{ success: true, data }` or `{ success: false, error: { code, message } }`, and `{ success: boolean }` for clearing data).
 - Outlines the global DOM namespace (`window.FormFlow`), including `scanForm()`, `createFillPlan()`, `mountWidget()`, `fillFields()`, `undoFill()`, and `canUndo()`.
 - Standardizes error structures across the system without leaking stack traces.
 

@@ -227,6 +227,7 @@ Every background-worker reply strictly conforms to one of two envelope structure
 | `GET_PROFILE` | UI / Content Script | Background Worker | `{}` | `{ success: true, profile: Profile }` |
 | `SAVE_PROFILE` | UI / Content Script | Background Worker | `{ updates: Partial<Profile> }` | `{ success: true, profile: Profile }` |
 | `CLEAR_PROFILE` | UI / Content Script | Background Worker | `{}` | `{ success: boolean }` |
+| `GET_SPECS` | UI / Content Script | Background Worker | `{}` | `{ success: true, data: { specs: PortalSpec[] } }` |
 
 ### Detailed Messaging Specifications
 
@@ -308,6 +309,39 @@ Every background-worker reply strictly conforms to one of two envelope structure
 #### 6. `CLEAR_PROFILE`
 - **Request:** `{ "type": "CLEAR_PROFILE" }`
 - **Response:** `{ "success": true }` (returns `{ "success": boolean }`)
+
+#### 7. `GET_SPECS`
+- **Request:** `{ "type": "GET_SPECS" }`
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "specs": [
+        {
+          "id": "ssp-karnataka",
+          "name": "Karnataka State Scholarship Portal (SSP Post-Matric)",
+          "photo": {
+            "widthPx": 200,
+            "heightPx": 230,
+            "maxKB": 50,
+            "formats": ["jpeg", "jpg"]
+          },
+          "signature": {
+            "widthPx": 140,
+            "heightPx": 60,
+            "maxKB": 50,
+            "formats": ["jpeg", "jpg"]
+          },
+          "sourceUrl": "https://ssp.postmatric.karnataka.gov.in",
+          "lastVerified": "2026-11-20",
+          "verified": true,
+          "notes": "Official Post-Matric scholarship portal guidelines for Karnataka State departments."
+        }
+      ]
+    }
+  }
+  ```
 
 ---
 
