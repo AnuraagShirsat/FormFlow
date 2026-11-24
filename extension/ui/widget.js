@@ -199,9 +199,7 @@ var USE_DUMMY_DATA = true;
     var tabs = [
       { id: 'checklist', label: 'Checklist' },
       { id: 'fields', label: 'Fields' },
-      // PLACEHOLDER: Upload Tab (to be implemented in subsequent task)
       { id: 'upload', label: 'Upload' },
-      // PLACEHOLDER: Review Tab (to be implemented in subsequent task)
       { id: 'review', label: 'Review' },
       // PLACEHOLDER: Photo / Specs Tab (to be implemented in subsequent task)
       { id: 'photo', label: 'Photo Specs' }
@@ -471,11 +469,54 @@ var USE_DUMMY_DATA = true;
       } else if (state.activeTab === 'fields') {
         body.appendChild(buildFieldsView());
       } else if (state.activeTab === 'upload') {
-        // PLACEHOLDER: Upload Tab (to be implemented in subsequent task)
-        body.appendChild(el('div', 'Document upload interface will be available here.', { class: 'ff-empty' }));
+        if (root.FormFlow.ui && typeof root.FormFlow.ui.renderUploadPanel === 'function') {
+          root.FormFlow.ui.renderUploadPanel(body, {
+            useDummy: USE_DUMMY_DATA,
+            getProfile: function () {
+              return state.profile;
+            },
+            saveProfile: function (updates) {
+              if (typeof root.FormFlow.saveProfile === 'function') {
+                return root.FormFlow.saveProfile(updates).then(function (res) {
+                  if (res && res.success && res.profile) {
+                    state.profile = res.profile;
+                  }
+                  return res;
+                });
+              } else {
+                state.profile = Object.assign({}, state.profile || {}, updates);
+                return Promise.resolve({ success: true, profile: state.profile });
+              }
+            },
+            onProfileChanged: function () {
+              if (typeof root.FormFlow.getProfile === 'function') {
+                root.FormFlow.getProfile().then(function (res) {
+                  if (res && res.success && res.profile) {
+                    state.profile = res.profile;
+                    if (state.activeTab === 'review') {
+                      render();
+                    }
+                  }
+                });
+              } else {
+                if (state.activeTab === 'review') {
+                  render();
+                }
+              }
+            }
+          });
+        }
       } else if (state.activeTab === 'review') {
-        // PLACEHOLDER: Review Tab (to be implemented in subsequent task)
-        body.appendChild(el('div', 'Review matched fields and autofill will be available here.', { class: 'ff-empty' }));
+        if (root.FormFlow.ui && typeof root.FormFlow.ui.renderReviewPanel === 'function') {
+          root.FormFlow.ui.renderReviewPanel(body, {
+            getFields: function () {
+              return state.scannedFields;
+            },
+            getProfile: function () {
+              return state.profile;
+            }
+          });
+        }
       } else if (state.activeTab === 'photo') {
         // PLACEHOLDER: Photo / Specs Tab (to be implemented in subsequent task)
         body.appendChild(el('div', 'Photo and signature specification checker will be available here.', { class: 'ff-empty' }));
