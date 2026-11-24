@@ -285,9 +285,9 @@
           "description": "Target form field identifier."
         },
         "profileKey": {
-          "type": "string",
+          "type": ["string", "null"],
           "maxLength": 50,
-          "description": "Corresponding key from Profile schema."
+          "description": "Corresponding key from Profile schema (null for unmatched red fields)."
         },
         "value": {
           "type": ["string", "number", "boolean", "null"],
@@ -313,8 +313,13 @@
     "ErrorResponse": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["error"],
+      "required": ["success", "error"],
       "properties": {
+        "success": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Always false for error responses."
+        },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -458,6 +463,7 @@
       }
     ],
     "ErrorResponseSample": {
+      "success": false,
       "error": {
         "code": "INVALID_IMAGE_PAYLOAD",
         "message": "Uploaded file is not a valid JPEG/PNG or exceeds maximum allowed size (SAMPLE)."
