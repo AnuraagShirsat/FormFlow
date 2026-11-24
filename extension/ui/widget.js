@@ -201,8 +201,7 @@ var USE_DUMMY_DATA = true;
       { id: 'fields', label: 'Fields' },
       { id: 'upload', label: 'Upload' },
       { id: 'review', label: 'Review' },
-      // PLACEHOLDER: Photo / Specs Tab (to be implemented in subsequent task)
-      { id: 'photo', label: 'Photo Specs' }
+      { id: 'photo', label: 'Photo' }
     ];
 
     var tabButtons = [];
@@ -518,8 +517,11 @@ var USE_DUMMY_DATA = true;
           });
         }
       } else if (state.activeTab === 'photo') {
-        // PLACEHOLDER: Photo / Specs Tab (to be implemented in subsequent task)
-        body.appendChild(el('div', 'Photo and signature specification checker will be available here.', { class: 'ff-empty' }));
+        if (root.FormFlow.ui && typeof root.FormFlow.ui.renderFixerPanel === 'function') {
+          root.FormFlow.ui.renderFixerPanel(body, {
+            useDummy: USE_DUMMY_DATA
+          });
+        }
       }
     }
 

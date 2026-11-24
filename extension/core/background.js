@@ -164,6 +164,7 @@ async function injectExtensionScripts(tabId) {
     'ui/dummyData.js',
     'ui/imageFixer.js',
     'ui/review.js',
+    'ui/imageFixerPanel.js',
     'ui/widget.js'
   ];
 
@@ -236,6 +237,17 @@ async function handleMessage(message, sender) {
         return response || { success: true, fields: [] };
       } catch (err) {
         return { success: false, error: { code: 'SCAN_FAILED', message: 'Form scanner script is not active on this page' } };
+      }
+    }
+
+    case 'GET_SPECS': {
+      try {
+        const specsUrl = chrome.runtime.getURL('filler/specs.json');
+        const res = await fetch(specsUrl);
+        const specs = await res.json();
+        return { success: true, data: { specs: specs } };
+      } catch (err) {
+        return { success: false, error: { code: 'SPECS_LOAD_FAILED', message: 'Unable to load portal specifications' } };
       }
     }
 
