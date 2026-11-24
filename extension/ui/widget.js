@@ -17,7 +17,7 @@
 // Offline demonstration toggle:
 // true: Uses offline fixtures from window.FormFlow.ui.dummy
 // false: Sends ANALYZE_FORM messages to background service worker and local Node proxy
-var USE_DUMMY_DATA = true;
+var USE_DUMMY_DATA = false;
 
 (function (root) {
   'use strict';
