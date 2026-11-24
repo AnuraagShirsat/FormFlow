@@ -285,9 +285,9 @@
           "description": "Target form field identifier."
         },
         "profileKey": {
-          "type": "string",
+          "type": ["string", "null"],
           "maxLength": 50,
-          "description": "Corresponding key from Profile schema."
+          "description": "Corresponding key from Profile schema (null for unmatched red fields)."
         },
         "value": {
           "type": ["string", "number", "boolean", "null"],
@@ -310,11 +310,71 @@
         }
       }
     },
+    "PortalSpecItem": {
+      "type": "object",
+      "required": ["id", "name", "photo", "signature", "sourceUrl", "lastVerified", "verified"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "photo": {
+          "type": "object",
+          "required": ["widthPx", "heightPx", "maxKB", "formats"],
+          "properties": {
+            "widthPx": { "type": "integer" },
+            "heightPx": { "type": "integer" },
+            "maxKB": { "type": "integer" },
+            "formats": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "signature": {
+          "type": "object",
+          "required": ["widthPx", "heightPx", "maxKB", "formats"],
+          "properties": {
+            "widthPx": { "type": "integer" },
+            "heightPx": { "type": "integer" },
+            "maxKB": { "type": "integer" },
+            "formats": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "sourceUrl": { "type": "string" },
+        "lastVerified": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "GetSpecsResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["success", "data"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "enum": [true]
+        },
+        "data": {
+          "type": "object",
+          "required": ["specs"],
+          "properties": {
+            "specs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/PortalSpecItem"
+              }
+            }
+          }
+        }
+      }
+    },
     "ErrorResponse": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["error"],
+      "required": ["success", "error"],
       "properties": {
+        "success": {
+          "type": "boolean",
+          "enum": [false],
+          "description": "Always false for error responses."
+        },
         "error": {
           "type": "object",
           "additionalProperties": false,
@@ -458,9 +518,37 @@
       }
     ],
     "ErrorResponseSample": {
+      "success": false,
       "error": {
         "code": "INVALID_IMAGE_PAYLOAD",
         "message": "Uploaded file is not a valid JPEG/PNG or exceeds maximum allowed size (SAMPLE)."
+      }
+    },
+    "GetSpecsResponseSample": {
+      "success": true,
+      "data": {
+        "specs": [
+          {
+            "id": "ssp-karnataka",
+            "name": "Karnataka State Scholarship Portal (SSP Post-Matric)",
+            "photo": {
+              "widthPx": 200,
+              "heightPx": 230,
+              "maxKB": 50,
+              "formats": ["jpeg", "jpg"]
+            },
+            "signature": {
+              "widthPx": 140,
+              "heightPx": 60,
+              "maxKB": 50,
+              "formats": ["jpeg", "jpg"]
+            },
+            "sourceUrl": "https://ssp.postmatric.karnataka.gov.in",
+            "lastVerified": "2026-11-20",
+            "verified": true,
+            "notes": "Official Post-Matric scholarship portal guidelines for Karnataka State departments."
+          }
+        ]
       }
     }
   }

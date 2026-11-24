@@ -6,6 +6,7 @@
 - Local profile persistence using `chrome.storage.local` (`GET_PROFILE`, `SAVE_PROFILE`, `CLEAR_PROFILE`).
 - Network proxy routing (`ANALYZE_FORM` and `EXTRACT_DOCUMENT`), ensuring the browser never contacts Gemini directly.
 - Form scan routing between the UI widget and the DOM scanner.
+- Internal catalog routing for portal photo/signature upload specifications (`GET_SPECS` reading `filler/specs.json`).
 - Data minimization enforcement, ensuring Aadhaar numbers are masked to the last 4 digits only and profiles are never logged to console.
 
 ---
@@ -13,8 +14,8 @@
 ## 2. How It Works Technically
 - **Event-Driven Lifecycle:** Built on Manifest V3 service worker architecture; terminates when idle and wakes up instantly upon incoming messages or extension icon clicks.
 - **On-Demand Injection:** Uses `chrome.action.onClicked` with `chrome.scripting.executeScript`. Instead of passively running on all URLs, scripts execute only when the user explicitly triggers FormFlow.
-- **Fail-Quiet Module Loader:** Iterates through candidate scripts (`core/config.js`, `core/content.js`, `filler/scanner.js`, `filler/filler.js`, `ui/widget.js`) checking existence via `chrome.runtime.getURL` and `fetch`. Unauthored modules are gracefully skipped without errors.
-- **Proxy Gateway:** Makes all external network requests through `callBackendProxy()`. Requests feature a 30-second `AbortController` timeout and return clean error objects without stack traces.
+- **Fail-Quiet Module Loader:** Iterates through candidate scripts (`core/config.js`, `core/content.js`, `core/scanner.js`, `filler/matcher.js`, `filler/filler.js`, `ui/domUtil.js`, `ui/uploadChecks.js`, `ui/widgetStyles.js`, `ui/dummyData.js`, `ui/imageFixer.js`, `ui/review.js`, `ui/imageFixerPanel.js`, `ui/widget.js`) checking existence via `chrome.runtime.getURL` and `fetch`. Unauthored modules are gracefully skipped without errors.
+- **Proxy Gateway:** Makes all external network requests through `callBackendProxy()`. Requests feature a 30-second `AbortController` timeout and return clean error objects without stack traces conforming to `{ success: false, error: { code, message } }`.
 - **Aadhaar Privacy Filter:** `saveStoredProfile()` inspects updates. If an unmasked 12-digit Aadhaar number is passed, it isolates the last 4 digits, sets `aadhaarLast4`, and deletes the full number before committing to storage.
 
 ---
@@ -44,7 +45,7 @@
 ### Security Checks Done:
 - **No Evaluation or Dynamic Strings:** Zero use of `eval()`, `new Function()`, or `setTimeout("string")`.
 - **Aadhaar Sanitization:** Automated stripping of any 12-digit Aadhaar string before persistence.
-- **Sanitized Error Envelopes:** Network exceptions and timeouts are transformed into standardized `{ error: { code, message } }` envelopes without leaking system internals.
+- **Sanitized Error Envelopes:** Network exceptions, timeouts, and input-validation rejections are transformed into standardized `{ success: false, error: { code, message } }` envelopes without leaking system internals.
 - **Restricted URL Guard:** Prevents injection into internal browser schemes (`chrome://`, `edge://`, `chrome-extension://`).
 
 ### Judge Security Questions & Answers:

@@ -7,7 +7,7 @@
 
 ## 2. How It Works Technically
 - **Namespace Initialization:** Instantiates `window.FormFlow` and safeguards against duplicate injection with an `__initialized` flag.
-- **Contract Interface Stubs:** Provides default, graceful stub implementations for `scanForm()`, `mountWidget()`, and `fillFields(plan)`. This allows independent development and testing of extension components without throwing runtime reference errors.
+- **Contract Interface Stubs:** Provides default, graceful stub implementations for `scanForm()`, `mountWidget()`, and `fillFields(plan)`. This allows independent development and testing of extension components without throwing runtime reference errors. Fallback warnings accurately point to `core/scanner.js`.
 - **Profile Action Hooks:** Exposes `window.FormFlow.clearProfile()`, `window.FormFlow.getProfile()`, and `window.FormFlow.saveProfile(updates)` directly to the UI widget, allowing user actions like "Clear my data" to communicate with `chrome.storage.local`.
 - **Message Dispatcher:** Provides `window.FormFlow.sendToBackground(type, payload)`, wrapping `chrome.runtime.sendMessage` in a Promise for clean async/await interactions throughout the UI layer.
 - **Runtime Message Listener:** Listens for `TOGGLE_WIDGET` and `SCAN_FORM` commands dispatched from the background service worker, invoking the appropriate module method when available.

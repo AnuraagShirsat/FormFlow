@@ -151,13 +151,20 @@ async function callBackendProxy(endpoint, payload) {
 async function injectExtensionScripts(tabId) {
   if (!tabId) return;
 
-  // Order of dependencies: config -> content namespace bridge -> scanner -> filler -> widget UI
+  // Order of dependencies: config -> content namespace bridge -> scanner -> matcher -> filler -> widget UI helpers -> widget UI
   const candidateScripts = [
     'core/config.js',
     'core/content.js',
     'core/scanner.js',
-    'filler/scanner.js',
+    'filler/matcher.js',
     'filler/filler.js',
+    'ui/domUtil.js',
+    'ui/uploadChecks.js',
+    'ui/widgetStyles.js',
+    'ui/dummyData.js',
+    'ui/imageFixer.js',
+    'ui/review.js',
+    'ui/imageFixerPanel.js',
     'ui/widget.js'
   ];
 
@@ -183,7 +190,7 @@ async function injectExtensionScripts(tabId) {
  */
 async function handleMessage(message, sender) {
   if (!message || typeof message !== 'object') {
-    return { error: { code: 'INVALID_MESSAGE', message: 'Message payload must be an object' } };
+    return { success: false, error: { code: 'INVALID_MESSAGE', message: 'Message payload must be an object' } };
   }
 
   const { type, payload } = message;
@@ -207,14 +214,14 @@ async function handleMessage(message, sender) {
 
     case 'ANALYZE_FORM': {
       if (!payload) {
-        return { error: { code: 'INVALID_PAYLOAD', message: 'Missing payload for ANALYZE_FORM' } };
+        return { success: false, error: { code: 'INVALID_PAYLOAD', message: 'Missing payload for ANALYZE_FORM' } };
       }
       return await callBackendProxy('analyze-form', payload);
     }
 
     case 'EXTRACT_DOCUMENT': {
       if (!payload) {
-        return { error: { code: 'INVALID_PAYLOAD', message: 'Missing payload for EXTRACT_DOCUMENT' } };
+        return { success: false, error: { code: 'INVALID_PAYLOAD', message: 'Missing payload for EXTRACT_DOCUMENT' } };
       }
       return await callBackendProxy('extract-document', payload);
     }
@@ -223,18 +230,29 @@ async function handleMessage(message, sender) {
       // If requested by UI, forward scan request to the content script in the sender's tab
       const tabId = (sender && sender.tab && sender.tab.id) ? sender.tab.id : null;
       if (!tabId) {
-        return { error: { code: 'NO_ACTIVE_TAB', message: 'Cannot scan form without an active tab' } };
+        return { success: false, error: { code: 'NO_ACTIVE_TAB', message: 'Cannot scan form without an active tab' } };
       }
       try {
         const response = await chrome.tabs.sendMessage(tabId, { type: 'SCAN_FORM' });
         return response || { success: true, fields: [] };
       } catch (err) {
-        return { error: { code: 'SCAN_FAILED', message: 'Form scanner script is not active on this page' } };
+        return { success: false, error: { code: 'SCAN_FAILED', message: 'Form scanner script is not active on this page' } };
+      }
+    }
+
+    case 'GET_SPECS': {
+      try {
+        const specsUrl = chrome.runtime.getURL('filler/specs.json');
+        const res = await fetch(specsUrl);
+        const specs = await res.json();
+        return { success: true, data: { specs: specs } };
+      } catch (err) {
+        return { success: false, error: { code: 'SPECS_LOAD_FAILED', message: 'Unable to load portal specifications' } };
       }
     }
 
     default:
-      return { error: { code: 'UNKNOWN_MESSAGE_TYPE', message: 'Unrecognized message type: ' + type } };
+      return { success: false, error: { code: 'UNKNOWN_MESSAGE_TYPE', message: 'Unrecognized message type: ' + type } };
   }
 }
 
@@ -244,6 +262,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     .then((result) => sendResponse(result))
     .catch((err) => {
       sendResponse({
+        success: false,
         error: {
           code: 'UNHANDLED_ERROR',
           message: err && err.message ? err.message : 'An unhandled service worker error occurred'

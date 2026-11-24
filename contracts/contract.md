@@ -212,6 +212,11 @@ The user profile is strictly stored in client-side extension storage (`chrome.st
 
 Communication between content scripts (DOM context) and the background service worker (`chrome.runtime.sendMessage` and `chrome.runtime.onMessage`).
 
+### Universal Reply Envelope Invariant:
+Every background-worker reply strictly conforms to one of two envelope structures:
+- **Success:** `{ success: true, data }` (or `{ success: true, ... }` containing action-specific payload such as `profile` or `fields`, and `{ success: boolean }` for operations like clear).
+- **Failure:** `{ success: false, error: { code, message } }`.
+
 ### Message Types Table
 
 | Message Action | Sent By | Received By | Payload Shape | Success Response Shape |
@@ -221,7 +226,8 @@ Communication between content scripts (DOM context) and the background service w
 | `EXTRACT_DOCUMENT` | UI / Content Script | Background Worker | `{ docType: string, mimeType: string, data: string }` | `{ success: true, data: ExtractDocumentResponse }` |
 | `GET_PROFILE` | UI / Content Script | Background Worker | `{}` | `{ success: true, profile: Profile }` |
 | `SAVE_PROFILE` | UI / Content Script | Background Worker | `{ updates: Partial<Profile> }` | `{ success: true, profile: Profile }` |
-| `CLEAR_PROFILE` | UI / Content Script | Background Worker | `{}` | `{ success: true }` |
+| `CLEAR_PROFILE` | UI / Content Script | Background Worker | `{}` | `{ success: boolean }` |
+| `GET_SPECS` | UI / Content Script | Background Worker | `{}` | `{ success: true, data: { specs: PortalSpec[] } }` |
 
 ### Detailed Messaging Specifications
 
@@ -302,7 +308,40 @@ Communication between content scripts (DOM context) and the background service w
 
 #### 6. `CLEAR_PROFILE`
 - **Request:** `{ "type": "CLEAR_PROFILE" }`
-- **Response:** `{ "success": true }`
+- **Response:** `{ "success": true }` (returns `{ "success": boolean }`)
+
+#### 7. `GET_SPECS`
+- **Request:** `{ "type": "GET_SPECS" }`
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "specs": [
+        {
+          "id": "ssp-karnataka",
+          "name": "Karnataka State Scholarship Portal (SSP Post-Matric)",
+          "photo": {
+            "widthPx": 200,
+            "heightPx": 230,
+            "maxKB": 50,
+            "formats": ["jpeg", "jpg"]
+          },
+          "signature": {
+            "widthPx": 140,
+            "heightPx": 60,
+            "maxKB": 50,
+            "formats": ["jpeg", "jpg"]
+          },
+          "sourceUrl": "https://ssp.postmatric.karnataka.gov.in",
+          "lastVerified": "2026-11-20",
+          "verified": true,
+          "notes": "Official Post-Matric scholarship portal guidelines for Karnataka State departments."
+        }
+      ]
+    }
+  }
+  ```
 
 ---
 
@@ -313,8 +352,11 @@ To coordinate between modular content scripts without global variable collisions
 ```javascript
 window.FormFlow = {
   scanForm: function() {},
+  createFillPlan: function(scannedFields, profile) {},
   mountWidget: function() {},
-  fillFields: function(plan) {}
+  fillFields: function(plan) {},
+  undoFill: function() {},
+  canUndo: function() {}
 };
 ```
 
@@ -325,39 +367,73 @@ window.FormFlow = {
 - **Behavior:** Scans the active DOM for actionable inputs (`input`, `select`, `textarea`). Skips hidden inputs, buttons, submits, passwords, and the FormFlow shadow widget itself. Does NOT extract current field values.
 - **Returns:** Array of `FormField` objects (max 100).
 
-### 2. `window.FormFlow.mountWidget()`
+### 2. `window.FormFlow.createFillPlan(scannedFields, profile)`
+- **Signature:** `createFillPlan(scannedFields: FormField[], profile: Profile) -> FillPlanItem[]`
+- **Behavior:** Maps discovered form fields against the student profile using multilingual synonym dictionaries, token overlap, and field-type matching. Assigns confidence ratings and status (`"green"` or `"red"`). Unmatched or low-confidence fields have `profileKey: null`, `value: null`, `confidence: 0.0`, and status `"red"`.
+- **Returns:** Array of `FillPlanItem` objects.
+
+### 3. `window.FormFlow.mountWidget()`
 - **Signature:** `mountWidget() -> HTMLElement`
 - **Behavior:** Attaches a persistent floating button and panel into an isolated `ShadowRoot` (`mode: 'closed'`). Uses standard DOM creation (`document.createElement`) and never uses `innerHTML`.
 - **Returns:** The host container element attached to `document.body`.
 
-### 3. `window.FormFlow.fillFields(plan)`
+### 4. `window.FormFlow.fillFields(plan)`
 - **Signature:** `fillFields(plan: FillPlanItem[]) -> { filledCount: number, skippedCount: number, errors: string[] }`
 - **Behavior:**
   - Iterates over the `plan` items.
   - Matches each `item.fieldId` to target DOM elements.
-  - Checks `item.status === 'green'`.
-  - Dispatches native DOM change events (`input`, `change`, `blur`) so form frameworks detect updates.
+  - Fills elements where `item.status === 'green'` using native prototype property setters so frameworks (React, Vue, Angular) register changes.
+  - Outlines missing / low-confidence (`item.status === 'red'`) fields with a distinct red border and scrolls to the first red field.
+  - Dispatches native DOM change events (`input`, `change`, `blur`) so form listeners fire.
+  - Records previous field states to an internal undo stack for full restoration.
   - **NEVER triggers form submission (`form.submit()` or clicking submit buttons).**
 - **Plan Item Shape (`FillPlanItem`):**
+  - `fieldId` (`string`, max 64 chars): Target form field identifier.
+  - `profileKey` (`string | null`, max 50 chars): Profile key if matched, or `null` for unmatched red fields.
+  - `value` (`string | number | boolean | null`): Value to populate.
+  - `confidence` (`number`, 0.0 to 1.0): Match confidence.
+  - `status` (`"green" | "red"`): Review indicator.
+  - `reason` (`string`, max 300 chars): Student-facing justification.
   ```json
-  {
-    "fieldId": "applicant_full_name",
-    "profileKey": "fullName",
-    "value": "KAVYA RAMESH SHETTY (SAMPLE)",
-    "confidence": 0.98,
-    "status": "green",
-    "reason": "Direct match from verified Aadhaar record."
-  }
+  [
+    {
+      "fieldId": "applicant_full_name",
+      "profileKey": "fullName",
+      "value": "KAVYA RAMESH SHETTY (SAMPLE)",
+      "confidence": 0.98,
+      "status": "green",
+      "reason": "Direct match from verified Aadhaar record."
+    },
+    {
+      "fieldId": "unmatched_custom_field",
+      "profileKey": null,
+      "value": null,
+      "confidence": 0.0,
+      "status": "red",
+      "reason": "Not found in your documents"
+    }
+  ]
   ```
+
+### 5. `window.FormFlow.undoFill()`
+- **Signature:** `undoFill() -> { restoredCount: number, success: boolean }`
+- **Behavior:** Restores all form inputs modified during the preceding `fillFields` call to their previous values, states, and outlines. Replays changes in reverse order from an internal undo stack.
+- **Returns:** `{ restoredCount: number, success: boolean }`.
+
+### 6. `window.FormFlow.canUndo()`
+- **Signature:** `canUndo() -> boolean`
+- **Behavior:** Checks whether an active undo stack exists from a previous form fill operation.
+- **Returns:** `boolean`.
 
 ---
 
 ## 7. Universal Error Shape
 
-All proxy HTTP error responses and internal background error envelopes strictly follow this format. **Stack traces and internal server diagnostics are never returned.**
+All proxy HTTP error responses and background error replies strictly follow this format. Every background-worker reply is `{ success: true, data }` (or `{ success: true, ... }`) on success, or `{ success: false, error: { code, message } }` on failure. **Stack traces and internal server diagnostics are never returned.**
 
 ```json
 {
+  "success": false,
   "error": {
     "code": "RATE_LIMIT_EXCEEDED",
     "message": "Too many requests to document extraction. Please wait one minute before trying again."

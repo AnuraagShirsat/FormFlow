@@ -34,6 +34,7 @@
       chrome.runtime.sendMessage({ type: type, payload: payload }, (response) => {
         if (chrome.runtime.lastError) {
           resolve({
+            success: false,
             error: {
               code: 'COMMUNICATION_ERROR',
               message: chrome.runtime.lastError.message || 'Failed to message background worker'
@@ -73,13 +74,13 @@
   };
 
   /**
-   * Default scanForm fallback if filler/scanner.js has not loaded.
+   * Default scanForm fallback if core/scanner.js has not loaded.
    * Overridden by Kartik's scanner.js.
    * @returns {Array} List of detected FormField objects.
    */
   if (typeof window.FormFlow.scanForm !== 'function') {
     window.FormFlow.scanForm = function () {
-      console.warn('FormFlow: scanForm called before filler/scanner.js loaded');
+      console.warn('FormFlow: scanForm called before core/scanner.js loaded');
       return [];
     };
   }
