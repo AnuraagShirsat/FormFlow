@@ -151,13 +151,19 @@ async function callBackendProxy(endpoint, payload) {
 async function injectExtensionScripts(tabId) {
   if (!tabId) return;
 
-  // Order of dependencies: config -> content namespace bridge -> scanner -> filler -> widget UI
+  // Order of dependencies: config -> content namespace bridge -> scanner -> matcher -> filler -> widget UI helpers -> widget UI
   const candidateScripts = [
     'core/config.js',
     'core/content.js',
     'core/scanner.js',
-    'filler/scanner.js',
+    'filler/matcher.js',
     'filler/filler.js',
+    'ui/domUtil.js',
+    'ui/uploadChecks.js',
+    'ui/widgetStyles.js',
+    'ui/dummyData.js',
+    'ui/imageFixer.js',
+    'ui/review.js',
     'ui/widget.js'
   ];
 

@@ -13,7 +13,7 @@
 ## 2. How It Works Technically
 - **Event-Driven Lifecycle:** Built on Manifest V3 service worker architecture; terminates when idle and wakes up instantly upon incoming messages or extension icon clicks.
 - **On-Demand Injection:** Uses `chrome.action.onClicked` with `chrome.scripting.executeScript`. Instead of passively running on all URLs, scripts execute only when the user explicitly triggers FormFlow.
-- **Fail-Quiet Module Loader:** Iterates through candidate scripts (`core/config.js`, `core/content.js`, `filler/scanner.js`, `filler/filler.js`, `ui/widget.js`) checking existence via `chrome.runtime.getURL` and `fetch`. Unauthored modules are gracefully skipped without errors.
+- **Fail-Quiet Module Loader:** Iterates through candidate scripts (`core/config.js`, `core/content.js`, `core/scanner.js`, `filler/matcher.js`, `filler/filler.js`, `ui/domUtil.js`, `ui/uploadChecks.js`, `ui/widgetStyles.js`, `ui/dummyData.js`, `ui/imageFixer.js`, `ui/review.js`, `ui/widget.js`) checking existence via `chrome.runtime.getURL` and `fetch`. Unauthored modules are gracefully skipped without errors.
 - **Proxy Gateway:** Makes all external network requests through `callBackendProxy()`. Requests feature a 30-second `AbortController` timeout and return clean error objects without stack traces conforming to `{ success: false, error: { code, message } }`.
 - **Aadhaar Privacy Filter:** `saveStoredProfile()` inspects updates. If an unmasked 12-digit Aadhaar number is passed, it isolates the last 4 digits, sets `aadhaarLast4`, and deletes the full number before committing to storage.
 
