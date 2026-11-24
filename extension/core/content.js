@@ -34,6 +34,7 @@
       chrome.runtime.sendMessage({ type: type, payload: payload }, (response) => {
         if (chrome.runtime.lastError) {
           resolve({
+            success: false,
             error: {
               code: 'COMMUNICATION_ERROR',
               message: chrome.runtime.lastError.message || 'Failed to message background worker'

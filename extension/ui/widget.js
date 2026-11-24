@@ -304,9 +304,20 @@ var USE_DUMMY_DATA = true;
 
     fields.forEach(function (field) {
       var isExpanded = (state.selectedFieldId === field.id);
-      var explanationText = (state.language !== 'en' && field.explanationLocal)
-        ? field.explanationLocal
-        : field.explanation;
+      var explanationText = '';
+      if (state.language !== 'en' && field.explanationLocal) {
+        explanationText = field.explanationLocal;
+      } else if (typeof field.explanation === 'string') {
+        explanationText = field.explanation;
+      } else if (field.explanation && typeof field.explanation === 'object') {
+        explanationText = (state.language !== 'en' && field.explanation.selected)
+          ? field.explanation.selected
+          : (field.explanation.en || '');
+      } else if (state.language !== 'en' && field.explanationSelected) {
+        explanationText = field.explanationSelected;
+      } else if (field.explanationEn) {
+        explanationText = field.explanationEn;
+      }
 
       var header = el('div', null, { class: 'ff-card-header' }, [
         el('span', field.id, { class: 'ff-field-title' }),
@@ -324,7 +335,7 @@ var USE_DUMMY_DATA = true;
           ]),
           el('div', null, { class: 'ff-detail-row' }, [
             el('strong', 'Source Document: '),
-            el('span', field.sourceDocument || 'General')
+            el('span', field.sourceDocument || field.document || 'General')
           ])
         ]);
         cardChildren.push(detailBody);

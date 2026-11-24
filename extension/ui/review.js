@@ -444,7 +444,7 @@
       });
 
       if (approvedPlan.length === 0) {
-        showStatus('No verified or entered fields to populate.', true);
+        showSummary('No verified or entered fields to populate.', true);
         return;
       }
 
