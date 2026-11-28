@@ -16,8 +16,13 @@ const CONFIG = {
   // Fallback production placeholder for deployment verification
   PRODUCTION_BASE_URL: 'https://formflow-backend.example.com',
 
-  // Network request timeout limit in milliseconds (30 seconds)
-  REQUEST_TIMEOUT_MS: 30000,
+  // Network request timeout limit in milliseconds (60 seconds for Render cold starts)
+  REQUEST_TIMEOUT_MS: 60000,
+
+  // Offline demonstration toggle:
+  // true: Uses offline fixtures from window.FormFlow.ui.dummy
+  // false: Sends ANALYZE_FORM messages to background service worker and local Node proxy
+  USE_DUMMY_DATA: false,
 
   // Local storage keys (scoped to chrome.storage.local)
   STORAGE_KEYS: {
@@ -44,7 +49,30 @@ const CONFIG = {
     ifsc: null,
     course: null,
     institution: null,
-    marks: null
+    marks: null,
+    state: null,
+    district: null,
+    rollNumber: null,
+    bankName: null
+  },
+
+  // Extractor key mapping to canonical profile keys.
+  // Unmapped keys (such as certificate_number, issue_date) are ignored.
+  EXTRACT_KEY_MAP: {
+    annual_income: 'annualIncome',
+    annualIncome: 'annualIncome',
+    percentage: 'marks',
+    marks: 'marks',
+    student_name: 'fullName',
+    applicant_name: 'fullName',
+    account_holder_name: 'fullName',
+    father_name: 'fatherName',
+    ifsc_code: 'ifsc',
+    account_number: 'bankAccount',
+    bank_name: 'bankName',
+    roll_number: 'rollNumber',
+    state: 'state',
+    district: 'district'
   },
 
   // Supported UI languages

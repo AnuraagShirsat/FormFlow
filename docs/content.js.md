@@ -1,50 +1,53 @@
 # Documentation: `/extension/core/content.js`
 
 ## 1. What It Does
-`content.js` establishes the shared `window.FormFlow` execution namespace within the active webpage's isolated world context. It acts as the orchestration hub that bridges Kartik's scanning and filling scripts (`/extension/filler`) with Himani's user interface widget (`/extension/ui`), while providing communication channels to the background service worker.
+`content.js` establishes the shared `window.FormFlow` execution namespace within the active webpage's isolated world context:
+- Acts as the orchestration bridge connecting Kartik's DOM scanner (`core/scanner.js`) and form filler (`filler/filler.js`) with Himani's floating UI widget (`ui/widget.js`).
+- Provides safe, non-throwing fallback stubs for `scanForm()`, `mountWidget()`, and `fillFields(plan)` adhering to the updated `{ filledCount, skippedCount, missingCount, errors: [] }` return contract.
+- Exposes Promise-wrapped communication helpers (`sendToBackground`, `getProfile`, `saveProfile`, `clearProfile`).
+- Enforces runtime security on incoming messages: validates `sender.id === chrome.runtime.id` and restricts handled messages to known types (`TOGGLE_WIDGET`, `SCAN_FORM`, `PING`).
+- Implements the `{ type: 'PING' }` responder so the background service worker can skip redundant script re-injection.
 
 ---
 
 ## 2. How It Works Technically
-- **Namespace Initialization:** Instantiates `window.FormFlow` and safeguards against duplicate injection with an `__initialized` flag.
-- **Contract Interface Stubs:** Provides default, graceful stub implementations for `scanForm()`, `mountWidget()`, and `fillFields(plan)`. This allows independent development and testing of extension components without throwing runtime reference errors. Fallback warnings accurately point to `core/scanner.js`.
-- **Profile Action Hooks:** Exposes `window.FormFlow.clearProfile()`, `window.FormFlow.getProfile()`, and `window.FormFlow.saveProfile(updates)` directly to the UI widget, allowing user actions like "Clear my data" to communicate with `chrome.storage.local`.
-- **Message Dispatcher:** Provides `window.FormFlow.sendToBackground(type, payload)`, wrapping `chrome.runtime.sendMessage` in a Promise for clean async/await interactions throughout the UI layer.
-- **Runtime Message Listener:** Listens for `TOGGLE_WIDGET` and `SCAN_FORM` commands dispatched from the background service worker, invoking the appropriate module method when available.
-- **Safe DOM Practices:** Employs zero `innerHTML`, `eval()`, or inline event listeners.
+- **Namespace Initialization & Guard:** Checks `window.FormFlow && window.FormFlow.__initialized`. If true, exits immediately to prevent duplicate listener registration.
+- **Contract-Compliant Fallback Stubs:** Provides default implementations for core APIs. Specifically, `window.FormFlow.fillFields(plan)` defaults to `{ filledCount: 0, skippedCount: plan.length, missingCount: 0, errors: [] }`, preventing crashes if called before filler scripts load.
+- **Sender Authentication:** In `chrome.runtime.onMessage.addListener`, verifies that `sender.id === chrome.runtime.id`. Any message from an unauthorized origin is silently dropped.
+- **Known Message Filtering:** Checks incoming messages against `KNOWN_CONTENT_TYPES: ['TOGGLE_WIDGET', 'SCAN_FORM', 'PING']`. Unknown actions are rejected without side effects.
+- **Ping Responder:** Responds to `{ type: 'PING' }` with `{ success: true, running: true }`, allowing the service worker to verify that the extension bridge is already active in the tab.
 
 ---
 
 ## 3. Judge Questions with Short Answers
 
-**Q: Why use a shared window.FormFlow namespace instead of ES module imports?**  
-**A:** In Chrome Manifest V3 content scripts, native ES module imports across distinct files injected into the DOM require specific manifest configurations or complex bundlers like Webpack/Vite. Using vanilla JavaScript with a shared namespace eliminates the need for build tools, keeping code transparent and immediately reviewable.
+**Q: Why does content.js respond to a PING message?**  
+**A:** When a student clicks the extension icon in Chrome, the service worker sends a PING to check if `content.js` is already running in that tab. If it responds, the service worker skips injecting scripts again, preventing memory leaks, duplicate event listeners, and multiple floating pills.
 
-**Q: Can a form website's JavaScript access window.FormFlow?**  
-**A:** No. Chrome content scripts execute in an "isolated world". Even though they share the same DOM elements as the host webpage, their JavaScript execution environments (`window` scopes) are strictly separated. The host page cannot inspect or modify `window.FormFlow`.
+**Q: What is the contract signature of `fillFields` in content.js?**  
+**A:** The fallback stub returns `{ filledCount, skippedCount, missingCount, errors: [] }` conforming to the updated shared contract specification, ensuring consistent interface handling even when testing modules independently.
 
-**Q: What happens if the student clicks the extension before the filler script finishes loading?**  
-**A:** The safe fallback stubs in `content.js` handle invocations gracefully, returning empty arrays and logging warnings without throwing uncaught exceptions.
+**Q: Can a script on the form page interact with or tamper with `window.FormFlow`?**  
+**A:** No. Chrome content scripts run in an "isolated world". Although they interact with the same underlying DOM tree as the host page, their JavaScript execution contexts (`window` globals and variable scopes) are strictly separated.
 
 ---
 
 ## 4. What to Know Before the Judges
-- **Vanilla Architecture:** FormFlow uses no React, Vue, or Webpack in its content scripts. It runs entirely on lightweight vanilla JavaScript.
-- **Non-Destructive Invariant:** `content.js` does not alter page styles or inject global CSS that could disrupt the host application's layout.
-- **Orchestration Role:** Kartik attaches `scanForm` and `fillFields`; Himani attaches `mountWidget`. Anuraag maintains the `content.js` bridge.
+- **Lightweight Vanilla Design:** Runs without Webpack, React, or polyfills. Total execution footprint is under 150 lines.
+- **Zero Host Mutation:** Does not modify global page variables, alter page prototypes, or attach global CSS classes.
 
 ---
 
 ## 5. Security Checks Done and Judge Questions About Security
 
 ### Security Checks Done:
-- **No Evaluation:** Free of `eval()`, `new Function()`, or dynamic code evaluation.
-- **Strict DOM Separation:** Avoids direct modification of the host page's window prototypes.
-- **PII Scrubbing:** Logs only operational lifecycle milestones; does not log user-entered values or form payloads.
+- **Sender Runtime ID Guard:** Verified that messages without `sender.id === chrome.runtime.id` are discarded.
+- **No Evaluation:** Verified complete absence of `eval()`, `new Function()`, or `setTimeout(string)`.
+- **Zero User PII:** Logs only operational startup and warning strings; never outputs form contents or profile keys.
 
 ### Judge Security Questions & Answers:
-**Q: How do you prevent event listener leaks when scripts are injected on demand?**  
-**A:** The script checks `window.FormFlow.__initialized`. If the script was already injected into the tab during a previous click, subsequent executions exit immediately to prevent duplicate event listener registrations.
+**Q: Could a third-party webpage send synthetic DOM events to trigger FormFlow actions?**  
+**A:** No. FormFlow actions (`TOGGLE_WIDGET`, `SCAN_FORM`) are triggered solely via Chrome's internal extension messaging pipeline (`chrome.runtime.onMessage`), which webpage scripts cannot invoke.
 
-**Q: Does content.js store student credentials in cookies or session storage?**  
-**A:** No. It stores zero state in cookies, `localStorage`, or `sessionStorage`. All state persistence is mediated through the background service worker into `chrome.storage.local`.
+**Q: How does content.js ensure no sensitive data is leaked if a background communication fails?**  
+**A:** `sendToBackground()` intercepts `chrome.runtime.lastError` and returns a clean, sanitized error object `{ success: false, error: { code: 'COMMUNICATION_ERROR', message: ... } }` rather than letting uncaught exceptions propagate.

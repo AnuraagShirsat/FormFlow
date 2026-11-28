@@ -1,56 +1,62 @@
 # Documentation: `/extension/core/background.js`
 
 ## 1. What It Does
-`background.js` is the Manifest V3 background service worker for FormFlow. It functions as the central message broker and security gateway. It coordinates:
-- On-demand injection of content scripts when the extension icon is clicked.
-- Local profile persistence using `chrome.storage.local` (`GET_PROFILE`, `SAVE_PROFILE`, `CLEAR_PROFILE`).
-- Network proxy routing (`ANALYZE_FORM` and `EXTRACT_DOCUMENT`), ensuring the browser never contacts Gemini directly.
-- Form scan routing between the UI widget and the DOM scanner.
-- Internal catalog routing for portal photo/signature upload specifications (`GET_SPECS` reading `filler/specs.json`).
-- Data minimization enforcement, ensuring Aadhaar numbers are masked to the last 4 digits only and profiles are never logged to console.
+`background.js` is the Chrome Manifest V3 background service worker for FormFlow. It functions as the central message broker, profile storage manager, and proxy communication gateway:
+- Coordinates on-demand script injection, checking whether FormFlow is already running in the tab to prevent redundant re-injection.
+- Manages client-side profile persistence in `chrome.storage.local` (`GET_PROFILE`, `SAVE_PROFILE`, `CLEAR_PROFILE`).
+- Normalizes incoming document extraction keys through `CONFIG.EXTRACT_KEY_MAP` and cleans values (digits-only annual income, plain number string marks, uppercase IFSC, 6-digit pincode).
+- Enforces strict Aadhaar data minimization: reduces `aadhaar`, `id_number`, and `aadhaarNumber` to `aadhaarLast4` (4 digits) and deletes the original keys.
+- Enforces runtime security: rejects messages from untrusted sender IDs (`sender.id !== chrome.runtime.id`), validates message types, and caps payload sizes at 6 MB before forwarding to the backend proxy.
+- Routes backend calls (`ANALYZE_FORM` and `EXTRACT_DOCUMENT`) to the Node proxy.
+- Logs strictly the count of saved fields, never logging profile keys or student values.
 
 ---
 
 ## 2. How It Works Technically
-- **Event-Driven Lifecycle:** Built on Manifest V3 service worker architecture; terminates when idle and wakes up instantly upon incoming messages or extension icon clicks.
-- **On-Demand Injection:** Uses `chrome.action.onClicked` with `chrome.scripting.executeScript`. Instead of passively running on all URLs, scripts execute only when the user explicitly triggers FormFlow.
-- **Fail-Quiet Module Loader:** Iterates through candidate scripts (`core/config.js`, `core/content.js`, `core/scanner.js`, `filler/matcher.js`, `filler/filler.js`, `ui/domUtil.js`, `ui/uploadChecks.js`, `ui/widgetStyles.js`, `ui/dummyData.js`, `ui/imageFixer.js`, `ui/review.js`, `ui/imageFixerPanel.js`, `ui/widget.js`) checking existence via `chrome.runtime.getURL` and `fetch`. Unauthored modules are gracefully skipped without errors.
-- **Proxy Gateway:** Makes all external network requests through `callBackendProxy()`. Requests feature a 30-second `AbortController` timeout and return clean error objects without stack traces conforming to `{ success: false, error: { code, message } }`.
-- **Aadhaar Privacy Filter:** `saveStoredProfile()` inspects updates. If an unmasked 12-digit Aadhaar number is passed, it isolates the last 4 digits, sets `aadhaarLast4`, and deletes the full number before committing to storage.
+- **Event-Driven Lifecycle:** Built on Chrome MV3 service worker architecture; automatically idles when inactive and awakens upon toolbar clicks or runtime messages.
+- **Duplicate Injection Guard:** In `chrome.action.onClicked`, dispatches a lightweight `{ type: 'PING' }` message to the active tab. If a running content script responds, script injection is skipped and the widget is toggled immediately, preventing duplicate pill elements.
+- **Strict Sender & Type Validation:** In `handleMessage`, verifies that `sender.id === chrome.runtime.id` and validates that `message.type` belongs to `KNOWN_MESSAGE_TYPES`. Unrecognized types or external senders are rejected immediately.
+- **6 MB Payload Boundary:** Before forwarding payloads to `POST /analyze-form` or `POST /extract-document`, `callBackendProxy()` serializes the payload and checks its length. Any payload exceeding 6 MB is rejected with `{ success: false, error: { code: 'PAYLOAD_TOO_LARGE', message: ... } }`.
+- **Zero-Trust Profile Normalization:** `saveStoredProfile()` processes incoming updates through four sequential safeguards:
+  1. Identifies Aadhaar aliases (`aadhaar`, `id_number`, `aadhaarNumber`), isolates the final 4 digits into `aadhaarLast4`, and deletes the original raw properties.
+  2. Normalizes extractor keys to standard camelCase profile keys via `CONFIG.EXTRACT_KEY_MAP`, safely ignoring unmapped keys like `certificate_number` or `issue_date`.
+  3. Sanitizes values: converts `annualIncome` to digits only (e.g. `'2,50,000'` becomes `'250000'`), converts `marks` to a plain number string, trims and uppercases `ifsc`, and clamps `pincode` to 6 digits.
+  4. Whitelists fields against `CONFIG.DEFAULT_PROFILE` and persists the result to `chrome.storage.local`.
+- **Redacted Console Logging:** Logs only the count of saved fields (e.g. `FormFlow: Student profile updated in local storage (5 fields)`), guaranteeing zero PII leaks in browser logs.
 
 ---
 
 ## 3. Judge Questions with Short Answers
 
-**Q: Why are network requests made from background.js rather than directly from the content script?**  
-**A:** Content scripts run in the context of untrusted webpage origins. By centralizing network requests in the background service worker, we prevent untrusted webpage scripts from tampering with proxy calls, observing payload contents, or hijacking network traffic.
+**Q: What prevents multiple FormFlow pills from appearing if a student clicks the extension icon multiple times?**  
+**A:** When the icon is clicked, `background.js` first pings the active tab with `{ type: 'PING' }`. If the content script is already active, `injectExtensionScripts()` is skipped entirely and only `{ type: 'TOGGLE_WIDGET' }` is sent. Furthermore, `widget.js` has a re-load guard and clears any stray host containers.
 
-**Q: Where does the student profile live, and who has access to it?**  
-**A:** The profile is stored strictly inside `chrome.storage.local` on the student's physical machine. It is never synchronized to cloud servers, remote databases, or external analytics.
+**Q: How does FormFlow handle dirty data extracted from uploaded documents?**  
+**A:** Document extractions often contain formatted text like `"Rs. 2,50,000/-"` or `"88.5%"`. In `saveStoredProfile()`, `annualIncome` is stripped to pure digits (`"250000"`), `marks` is cleaned to plain numbers (`"88.5"`), `ifsc` is converted to uppercase, and `pincode` is limited to 6 digits.
 
-**Q: What happens if a teammate has not yet pushed their file (e.g. widget.js)?**  
-**A:** `injectExtensionScripts()` checks the existence of each component before injecting. If a file is missing, the service worker fails quietly without crashing or breaking other initialized modules.
+**Q: Can an external webpage send fake messages to background.js?**  
+**A:** No. `handleMessage` verifies `sender.id === chrome.runtime.id`. Any message lacking our extension's internal runtime ID is rejected with `UNAUTHORIZED_SENDER`. Furthermore, `manifest.json` does not declare `externally_connectable`.
 
 ---
 
 ## 4. What to Know Before the Judges
-- **The "Clear My Data" Guarantee:** Demonstrating privacy is critical. The `CLEAR_PROFILE` message hook allows students to wipe all stored profile records with a single click.
-- **Zero Console Logging of PII:** Profile records and field values are never printed to developer console logs. Only operation metadata (such as field counts) is logged.
-- **Backend Dependency:** Live form analysis and document extraction require the local Node proxy running at `http://localhost:5000`.
+- **Payload Pre-flight:** Outbound proxy payloads are limited to 6 MB to protect backend proxy memory and prevent denial-of-service.
+- **Privacy Assurance:** Full Aadhaar numbers are never stored under any circumstances. Even if an extractor outputs `id_number: "123456789012"`, only `"9012"` is retained under `aadhaarLast4`.
+- **Render Cold Start Resilience:** `REQUEST_TIMEOUT_MS` is set to 60,000 ms to handle free-tier cloud backend wake-ups seamlessly.
 
 ---
 
 ## 5. Security Checks Done and Judge Questions About Security
 
 ### Security Checks Done:
-- **No Evaluation or Dynamic Strings:** Zero use of `eval()`, `new Function()`, or `setTimeout("string")`.
-- **Aadhaar Sanitization:** Automated stripping of any 12-digit Aadhaar string before persistence.
-- **Sanitized Error Envelopes:** Network exceptions, timeouts, and input-validation rejections are transformed into standardized `{ success: false, error: { code, message } }` envelopes without leaking system internals.
-- **Restricted URL Guard:** Prevents injection into internal browser schemes (`chrome://`, `edge://`, `chrome-extension://`).
+- **Sender ID Verification:** Tested message handling with simulated external sender; confirmed immediate rejection.
+- **Payload Size Enforcement:** Tested serialization threshold; confirmed rejection of payloads >6 MB.
+- **Aadhaar Redaction:** Tested with full 12-digit numbers across `aadhaar`, `id_number`, and `aadhaarNumber`; verified that only `aadhaarLast4` is persisted and raw keys are deleted.
+- **Zero PII Logging:** Verified console output; only operational field counts are logged.
 
 ### Judge Security Questions & Answers:
-**Q: Can a malicious website trigger SAVE_PROFILE to overwrite student data?**  
-**A:** No. `chrome.runtime.onMessage` only accepts messages dispatched from our extension's own origin. Webpages cannot send messages to our internal runtime listeners because we do not declare `externally_connectable` in `manifest.json`.
+**Q: What happens if a malicious script attempts prompt injection through document extraction fields?**  
+**A:** Any unknown or unexpected keys returned by extraction models are discarded because `saveStoredProfile` strictly whitelists keys against `CONFIG.DEFAULT_PROFILE`. Expected fields are sanitized to strict types (digits for income, uppercase for IFSC).
 
-**Q: What prevents a denial of service if the backend server hangs?**  
-**A:** Every outbound fetch is governed by an `AbortController` bounded by `CONFIG.REQUEST_TIMEOUT_MS` (30 seconds). If the proxy fails to respond within that window, the connection terminates cleanly and reports `REQUEST_TIMEOUT`.
+**Q: What prevents memory exhaustion in the background worker?**  
+**A:** The 6 MB pre-flight check in `callBackendProxy()` ensures oversized payloads are rejected before allocation or transmission. Outbound HTTP requests are aborted cleanly after 60 seconds if the backend hangs.

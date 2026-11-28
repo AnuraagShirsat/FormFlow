@@ -52,7 +52,7 @@ A comprehensive security audit of the FormFlow repository was conducted against 
 - The server does not look up, read, update, or delete any resource based on client-supplied database IDs.
 
 ### 3. API Key in the Browser
-- **Verified OK**: Grepped `/extension` and `/mock-form` for `GEMINI`, `AIza`, `apiKey`, and `Authorization`.
+- **Verified OK**: Grepped `/extension` and `/mock-form` for `GEMINI`, Google API key prefixes, `apiKey`, and `Authorization`.
   - Found zero hardcoded API keys or credentials in extension code.
   - Extension communicates exclusively with `CONFIG.BACKEND_BASE_URL` (`localhost:5000` or production proxy).
   - Backend reads `GEMINI_API_KEY` exclusively from server-side environment variables.
@@ -112,7 +112,7 @@ A comprehensive security audit of the FormFlow repository was conducted against 
 ### 13. Secrets in Git
 - **Verified OK**:
   - `.gitignore` explicitly excludes `.env`, `.env.*`, `*.pem`, `*.key`, `logs/`, `uploads/`, `private/`, `temp/`.
-  - `.env.example` contains only empty template placeholders (`GEMINI_API_KEY=`, etc.).
+  - `.env.example` contains only empty template placeholders (such as empty `GEMINI_API_KEY`).
   - Executed secret scan over working directory: **0 violations**.
   - Decompressed and inspected **all 361 git loose objects** across the full commit history: **0 secret leaks detected**. No API key was ever committed.
 
