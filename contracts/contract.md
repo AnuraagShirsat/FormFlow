@@ -183,6 +183,10 @@ The user profile is strictly stored in client-side extension storage (`chrome.st
 | `course` | string \| null | Max 100 chars | Current enrolled degree or diploma course. |
 | `institution` | string \| null | Max 150 chars | Name of college or university. |
 | `marks` | string \| null | Max 20 chars | Percentage or CGPA in preceding qualifying exam. |
+| `state` | string \| null | Max 100 chars | State of domicile / residence. |
+| `district` | string \| null | Max 100 chars | District of domicile / residence. |
+| `rollNumber` | string \| null | Max 50 chars | Student academic roll or registration number. |
+| `bankName` | string \| null | Max 100 chars | Name of bank holding DBT account. |
 
 ```json
 {
@@ -202,7 +206,11 @@ The user profile is strictly stored in client-side extension storage (`chrome.st
   "ifsc": "SBIN0001234",
   "course": "B.E. Computer Science (SAMPLE)",
   "institution": "Government Engineering College (SAMPLE)",
-  "marks": "88.5"
+  "marks": "88.5",
+  "state": "Karnataka",
+  "district": "Bengaluru Urban",
+  "rollNumber": "2026CS101 (SAMPLE)",
+  "bankName": "State Bank of India (SAMPLE)"
 }
 ```
 
@@ -378,12 +386,14 @@ window.FormFlow = {
 - **Returns:** The host container element attached to `document.body`.
 
 ### 4. `window.FormFlow.fillFields(plan)`
-- **Signature:** `fillFields(plan: FillPlanItem[]) -> { filledCount: number, skippedCount: number, errors: string[] }`
+- **Signature:** `fillFields(plan: FillPlanItem[]) -> { filledCount: number, skippedCount: number, missingCount: number, errors: string[] }`
 - **Behavior:**
-  - Iterates over the `plan` items.
+  - Receives the FULL `plan` items.
   - Matches each `item.fieldId` to target DOM elements.
-  - Fills elements where `item.status === 'green'` using native prototype property setters so frameworks (React, Vue, Angular) register changes.
-  - Outlines missing / low-confidence (`item.status === 'red'`) fields with a distinct red border and scrolls to the first red field.
+  - Fills elements where `item.status === 'green'`, and items where `item.status === 'amber'` AND `item.approved === true`.
+  - Uses native prototype property setters so frameworks (React, Vue, Angular) register changes.
+  - An item only counts as filled if the element really changed (for radios: it is checked afterwards).
+  - Outlines every missing / unfillable (`item.status === 'red'`) field with a distinct red border and scrolls to the first red field.
   - Dispatches native DOM change events (`input`, `change`, `blur`) so form listeners fire.
   - Records previous field states to an internal undo stack for full restoration.
   - **NEVER triggers form submission (`form.submit()` or clicking submit buttons).**
@@ -392,7 +402,11 @@ window.FormFlow = {
   - `profileKey` (`string | null`, max 50 chars): Profile key if matched, or `null` for unmatched red fields.
   - `value` (`string | number | boolean | null`): Value to populate.
   - `confidence` (`number`, 0.0 to 1.0): Match confidence.
-  - `status` (`"green" | "red"`): Review indicator.
+  - `status` (`"green" | "amber" | "red"`): Review indicator:
+    - `"green"`: confident match, will fill.
+    - `"amber"`: needs user review, filled only when `approved === true`.
+    - `"red"`: no usable data, user must fill manually.
+  - `approved` (`boolean`, optional): Flag set by the review screen when the student checks "Use this" for an amber item.
   - `reason` (`string`, max 300 chars): Student-facing justification.
   ```json
   [
@@ -403,6 +417,15 @@ window.FormFlow = {
       "confidence": 0.98,
       "status": "green",
       "reason": "Direct match from verified Aadhaar record."
+    },
+    {
+      "fieldId": "student_roll_number",
+      "profileKey": "rollNumber",
+      "value": "2026CS101 (SAMPLE)",
+      "confidence": 0.72,
+      "status": "amber",
+      "approved": true,
+      "reason": "Matched from marksheet with moderate confidence. User review recommended."
     },
     {
       "fieldId": "unmatched_custom_field",

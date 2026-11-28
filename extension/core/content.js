@@ -9,6 +9,7 @@
  * - Never use innerHTML, eval, or new Function.
  * - Never auto-submit forms.
  * - Never log sensitive student data.
+ * - Validate sender runtime ID and message type.
  */
 
 (function () {
@@ -22,6 +23,9 @@
   // Initialize shared FormFlow namespace
   window.FormFlow = window.FormFlow || {};
   window.FormFlow.__initialized = true;
+
+  // Known message types handled by the content script
+  const KNOWN_CONTENT_TYPES = ['TOGGLE_WIDGET', 'SCAN_FORM', 'PING'];
 
   /**
    * Helper to dispatch messages to the FormFlow background service worker.
@@ -100,22 +104,41 @@
   /**
    * Default fillFields fallback if filler/filler.js has not loaded.
    * Overridden by Kartik's filler.js.
+   * Conforms to the updated contract: { filledCount, skippedCount, missingCount, errors }.
    * @param {Array} plan Array of FillPlanItem objects.
-   * @returns {Object} Result summary.
+   * @returns {Object} Result summary { filledCount, skippedCount, missingCount, errors: [] }.
    */
   if (typeof window.FormFlow.fillFields !== 'function') {
     window.FormFlow.fillFields = function (plan) {
       console.warn('FormFlow: fillFields called before filler/filler.js loaded');
-      return { filledCount: 0, skippedCount: Array.isArray(plan) ? plan.length : 0, errors: [] };
+      const total = Array.isArray(plan) ? plan.length : 0;
+      return { filledCount: 0, skippedCount: total, missingCount: 0, errors: [] };
     };
   }
 
   /**
    * Listen for commands from the background service worker.
+   * Enforces strict sender checks and validates message types.
    */
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // Reject any message where sender.id !== chrome.runtime.id
+    if (sender && sender.id && sender.id !== chrome.runtime.id) {
+      return;
+    }
+
     if (!message || typeof message !== 'object') {
       return;
+    }
+
+    // Validate that message.type is one of the known content message types
+    if (!KNOWN_CONTENT_TYPES.includes(message.type)) {
+      return;
+    }
+
+    // Ping check to detect if FormFlow is already running in the tab
+    if (message.type === 'PING') {
+      sendResponse({ success: true, running: true });
+      return true;
     }
 
     if (message.type === 'TOGGLE_WIDGET') {

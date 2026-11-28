@@ -229,7 +229,11 @@
         "ifsc",
         "course",
         "institution",
-        "marks"
+        "marks",
+        "state",
+        "district",
+        "rollNumber",
+        "bankName"
       ],
       "properties": {
         "fullName": { "type": ["string", "null"], "maxLength": 150 },
@@ -271,7 +275,11 @@
         },
         "course": { "type": ["string", "null"], "maxLength": 100 },
         "institution": { "type": ["string", "null"], "maxLength": 150 },
-        "marks": { "type": ["string", "null"], "maxLength": 20 }
+        "marks": { "type": ["string", "null"], "maxLength": 20 },
+        "state": { "type": ["string", "null"], "maxLength": 100 },
+        "district": { "type": ["string", "null"], "maxLength": 100 },
+        "rollNumber": { "type": ["string", "null"], "maxLength": 50 },
+        "bankName": { "type": ["string", "null"], "maxLength": 100 }
       }
     },
     "FillPlanItem": {
@@ -300,8 +308,12 @@
         },
         "status": {
           "type": "string",
-          "enum": ["green", "red"],
-          "description": "green = matched with high confidence; red = missing, incomplete, or low confidence."
+          "enum": ["green", "amber", "red"],
+          "description": "green = confident, will fill; amber = needs the user's review; red = no usable data, user must fill."
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "Optional flag set by the review screen when the user ticks 'Use this' for an amber item."
         },
         "reason": {
           "type": "string",
@@ -497,7 +509,11 @@
       "ifsc": "SBIN0001234",
       "course": "B.E. Computer Science (SAMPLE)",
       "institution": "Government Engineering College (SAMPLE)",
-      "marks": "88.5"
+      "marks": "88.5",
+      "state": "Karnataka",
+      "district": "Bengaluru Urban",
+      "rollNumber": "2026CS101 (SAMPLE)",
+      "bankName": "State Bank of India (SAMPLE)"
     },
     "FillPlanSample": [
       {
@@ -507,6 +523,15 @@
         "confidence": 0.98,
         "status": "green",
         "reason": "Direct match from verified Aadhaar record."
+      },
+      {
+        "fieldId": "student_roll_number",
+        "profileKey": "rollNumber",
+        "value": "2026CS101 (SAMPLE)",
+        "confidence": 0.72,
+        "status": "amber",
+        "approved": true,
+        "reason": "Matched from marksheet with moderate confidence. User review recommended."
       },
       {
         "fieldId": "caste_sub_category",

@@ -1,57 +1,59 @@
 # Contract Documentation: `/contracts/contract.md` & `/contracts/contract.json`
 
 ## 1. What It Does
-The FormFlow contract establishes a strict, immutable interface boundary between all modules of the hackathon project:
-- Defines the scanning structure (`FormField`) that extracts page elements without collecting passwords, hidden inputs, or typed user values.
-- Specifies API request/response payloads for the Node.js backend proxy (`/analyze-form` and `/extract-document`).
-- Standardizes the student profile schema persisted exclusively inside `chrome.storage.local`.
-- Dictates internal Chrome runtime message types between content scripts and the background service worker (`SCAN_FORM`, `ANALYZE_FORM`, `EXTRACT_DOCUMENT`, `GET_PROFILE`, `SAVE_PROFILE`, `CLEAR_PROFILE`, `GET_SPECS`), with standardized reply envelopes (`{ success: true, data }` or `{ success: false, error: { code, message } }`, and `{ success: boolean }` for clearing data).
-- Outlines the global DOM namespace (`window.FormFlow`), including `scanForm()`, `createFillPlan()`, `mountWidget()`, `fillFields()`, `undoFill()`, and `canUndo()`.
-- Standardizes error structures across the system without leaking stack traces.
+The FormFlow contract establishes the authoritative interface boundary across all extension components and the Node.js backend proxy:
+- Defines the `FormField` specification capturing inputs without collecting passwords, hidden inputs, or user values.
+- Specifies API request/response payloads for `/analyze-form` (`explanation`, `explanationLocal`, `example`, `sourceDocument`, `requiredDocuments`) and `/extract-document`.
+- Defines the canonical 21-key `Profile` schema persisted in `chrome.storage.local`, including the new keys: `state`, `district`, `rollNumber`, and `bankName`. Full 12-digit Aadhaar numbers are strictly forbidden (`aadhaarLast4` only).
+- Defines the three-tier `FillPlanItem` specification: `status: "green" | "amber" | "red"`, including the optional `approved` boolean flag for amber items.
+- Defines the full-plan execution contract for `window.FormFlow.fillFields(plan)`, returning `{ filledCount, skippedCount, missingCount, errors: [] }`.
+- Defines internal Chrome runtime message types and standardized success/error reply envelopes.
 
 ---
 
 ## 2. How It Works Technically
-- **JSON Schema Validation:** Defined in [contract.json](file:///c:/GitHub%20Projects/FormFlow/contracts/contract.json) conforming to JSON Schema Draft-07, supporting automated payload validation on both frontend and backend.
-- **Specification Documentation:** Documented in human-readable Markdown in [contract.md](file:///c:/GitHub%20Projects/FormFlow/contracts/contract.md) with constraints, bounds, types, and synthetic samples.
-- **Single Source of Truth:** Maintained exclusively by Anuraag to eliminate integration bugs between distributed teammates (UI by Himani, Filler by Kartik, Backend by Ivan).
-- **Loose Coupling via Vanilla JS:** Modules attach methods to `window.FormFlow` (`scanForm`, `createFillPlan`, `mountWidget`, `fillFields`, `undoFill`, `canUndo`), allowing modular execution without Node build steps or transpilation.
-- **Confidence Rating & Plan Execution:** The fill plan requires explicit `status: "green" | "red"`, confidence thresholds, and plain-language reasoning before values can touch user form fields. Unmatched red fields allow `profileKey: null`.
+- **JSON Schema Validation:** Defined in [contract.json](file:///c:/GitHub%20Projects/FormFlow/contracts/contract.json) conforming to JSON Schema Draft-07, supporting schema validation across backend routes and client scripts.
+- **Specification Documentation:** Detailed in human-readable Markdown in [contract.md](file:///c:/GitHub%20Projects/FormFlow/contracts/contract.md) with types, constraints, descriptions, and synthetic sample objects.
+- **Three-Tier Match Review:**
+  - `"green"`: High confidence match; filled automatically when the student clicks "Fill form".
+  - `"amber"`: Medium confidence match; requires student review, filled only when `approved === true`.
+  - `"red"`: Missing or low confidence match; never filled, visibly outlined in red with automatic scroll to the first red field.
+- **Full-Plan Return Contract:** `window.FormFlow.fillFields(plan)` receives the complete plan and returns `{ filledCount, skippedCount, missingCount, errors: [] }`. An item only increments `filledCount` if the element value actually changed.
+- **Zero-Trust Data Minimization:** Restricts national identification strictly to `aadhaarLast4` (exactly 4 digits).
 
 ---
 
 ## 3. Judge Questions with Short Answers
 
-**Q: Why have a rigid contract for a hackathon project?**  
-**A:** With three engineers simultaneously authoring the UI, form filler, and backend proxy, the contract eliminates cross-team blockers, avoids API drift, and guarantees that security invariants (like zero password scanning) are honored from day one.
+**Q: What is the purpose of the new `amber` status in `FillPlanItem`?**  
+**A:** In high-stakes scholarship applications, guessing values with moderate confidence can cause application rejection. The `amber` status flags fields that need human review (such as fuzzy name matches or document roll numbers). These fields are only populated if the student explicitly marks them `approved: true` in the review UI.
 
-**Q: Why is Aadhaar restricted to only the last 4 digits in the Profile schema?**  
-**A:** Government portals only use the last 4 digits for student validation against DBT and UIDAI databases. Storing full 12-digit Aadhaar numbers creates immense privacy liability; keeping only the last 4 digits follows zero-trust data minimization.
+**Q: Why was `missingCount` added to the `fillFields` return shape?**  
+**A:** Returning `{ filledCount, skippedCount, missingCount, errors: [] }` provides full transparency. The UI widget can display how many fields were filled, how many were skipped by the student, and how many are missing required data, giving students confidence in what was changed.
 
-**Q: What prevents the extension from filling wrong fields or submitting forms automatically?**  
-**A:** The `fillFields(plan)` contract requires an explicit user click ("Fill Form") and validates that each item is flagged `status: "green"`. FormFlow's contract strictly prohibits programmatic form submission (`form.submit()`), leaving final submission under human control.
+**Q: Why are `state`, `district`, `rollNumber`, and `bankName` included in the Profile schema?**  
+**A:** Indian state and central scholarship portals (e.g. SSP Karnataka, NSP) require domicile state, district, academic roll number, and DBT bank name to disburse funds. Standardizing these 4 keys in the contract allows automatic mapping from marks cards and bank passbooks.
 
 ---
 
 ## 4. What to Know Before the Judges
-- **Synthetic Data Guarantee:** All sample data in contracts and mock fixtures are explicitly marked with `(SAMPLE)`. No live personally identifiable information (PII) is ever used.
-- **Client-Side Profile Storage:** The student profile lives only in the browser's `chrome.storage.local`. It is never uploaded to a database or cloud server.
-- **No Direct AI Communication:** The browser extension never communicates directly with Gemini. It routes through the private Node proxy defined in the contract.
-- **Multilingual Support:** The `/analyze-form` contract specifically requires native support for English (`en`), Kannada (`kn`), and Hindi (`hi`).
+- **Synthetic Sample Labeling:** Every sample value in `contract.json` and `contract.md` is explicitly labelled `(SAMPLE)`. Zero real PII exists in the repository.
+- **Single Source of Truth:** Maintained by Anuraag under `/contracts`. Teammates submit proposed contract changes via `docs/contract-requests.md`.
+- **Zero Auto-Submit:** FormFlow strictly forbids programmatic form submission (`form.submit()`); human agency is preserved.
 
 ---
 
 ## 5. Security Checks Done and Judge Questions About Security
 
 ### Security Checks Done:
-- **Zero Sensitive Field Capture:** Form scanning contract explicitly forbids capturing `type="password"`, `type="hidden"`, or existing input values.
-- **Payload Constraints:** Strict limits enforced on all fields (max 100 fields per form, max 64 characters per ID, max 200 characters per label, max 50 options per select) to prevent denial-of-service via malformed DOM attacks.
-- **Information Leak Prevention:** The universal error response shape `{ success: false, error: { code, message } }` strips all stack traces, file paths, and environment internals.
-- **Safe DOM Invariant:** Widget contracts mandate the use of Shadow DOM and forbid `innerHTML`, protecting against XSS attacks from third-party form pages.
+- **Schema Validation:** Validated `contract.json` syntax and draft-07 compatibility.
+- **Password Exclusion Invariant:** Confirmed that passwords and hidden fields are excluded from `FormField`.
+- **Aadhaar Regex Enforcement:** Verified that `aadhaarLast4` strictly enforces `^\d{4}$`.
+- **Error Sanitization:** Universal error response shape guarantees zero stack traces or internal server error leaks.
 
 ### Judge Security Questions & Answers:
-**Q: Could a malicious form page steal the student's profile via window.FormFlow?**  
-**A:** Content scripts run in an isolated execution world in Chrome MV3. While `window.FormFlow` is shared across our own extension content scripts within their isolated world, the host webpage's untrusted scripts cannot inspect or access our isolated world's `window` object or storage.
+**Q: How does the contract prevent cross-site data theft?**  
+**A:** The student profile contract stipulates storage exclusively in `chrome.storage.local`. The extension has no external sync API, no remote user database, and runs in an isolated extension world.
 
-**Q: What happens if an image payload contains exploit code or an invalid file?**  
-**A:** The `/extract-document` contract strictly limits MIME types to `image/jpeg`, `image/png`, and `application/pdf`, and the backend proxy validates base64 structure and payload limits before passing data to Gemini.
+**Q: What prevents a prompt injection in form fields from overriding contract constraints?**  
+**A:** The contract restricts string lengths (max 200 chars for labels, max 50 for options), and system prompts treat input text as passive data. The client review screen ensures the student reviews and approves values before they are written.

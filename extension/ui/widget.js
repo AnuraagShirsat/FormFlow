@@ -14,16 +14,29 @@
  * - Never logs PII to the browser console.
  */
 
-// Offline demonstration toggle:
-// true: Uses offline fixtures from window.FormFlow.ui.dummy
-// false: Sends ANALYZE_FORM messages to background service worker and local Node proxy
-var USE_DUMMY_DATA = true;
-
 (function (root) {
   'use strict';
 
+  // Prevent duplicate execution if widget script is re-injected
+  if (root.FormFlow && root.FormFlow.__widgetLoaded) {
+    return;
+  }
+
   // Ensure FormFlow namespace exists
   root.FormFlow = root.FormFlow || {};
+  root.FormFlow.__widgetLoaded = true;
+
+  // Offline demonstration toggle:
+  // Reads CONFIG.USE_DUMMY_DATA if available, defaults to false
+  var getUseDummyData = function () {
+    if (typeof CONFIG !== 'undefined' && typeof CONFIG.USE_DUMMY_DATA === 'boolean') {
+      return CONFIG.USE_DUMMY_DATA;
+    }
+    if (root.CONFIG && typeof root.CONFIG.USE_DUMMY_DATA === 'boolean') {
+      return root.CONFIG.USE_DUMMY_DATA;
+    }
+    return false;
+  };
 
   // DOM creation helper reference
   var el = (root.FormFlow.ui && root.FormFlow.ui.el) ? root.FormFlow.ui.el : function (tag, text, attrs, children) {
@@ -68,7 +81,7 @@ var USE_DUMMY_DATA = true;
     state.errorMessage = '';
     render();
 
-    if (USE_DUMMY_DATA) {
+    if (getUseDummyData()) {
       // Use offline fixtures matching contract
       var dummy = root.FormFlow.ui.dummy || {};
       state.scannedFields = (typeof root.FormFlow.scanForm === 'function')
@@ -138,7 +151,7 @@ var USE_DUMMY_DATA = true;
     state.statusMessage = '';
     render();
 
-    if (USE_DUMMY_DATA) {
+    if (getUseDummyData()) {
       var dummy = root.FormFlow.ui.dummy || {};
       if (dummy.analyzeForm && dummy.analyzeForm[newLang]) {
         state.analysis = dummy.analyzeForm[newLang];
@@ -428,6 +441,26 @@ var USE_DUMMY_DATA = true;
   }
 
   /**
+   * Dynamically positions the panel relative to the pill.
+   * If the pill is near the top of the viewport (< 560px), opens panel below (.ff-panel-below).
+   * If the pill is near the left edge (< 390px), aligns panel to the left (.ff-panel-left).
+   */
+  function positionPanel() {
+    if (!panelContainer || !hostElement) return;
+    var rect = hostElement.getBoundingClientRect();
+    if (rect.top < 560) {
+      panelContainer.classList.add('ff-panel-below');
+    } else {
+      panelContainer.classList.remove('ff-panel-below');
+    }
+    if (rect.left < 390) {
+      panelContainer.classList.add('ff-panel-left');
+    } else {
+      panelContainer.classList.remove('ff-panel-left');
+    }
+  }
+
+  /**
    * Renders the complete widget contents inside the closed ShadowRoot.
    */
   function render() {
@@ -450,6 +483,7 @@ var USE_DUMMY_DATA = true;
       return;
     }
     panelContainer.classList.remove('ff-hidden');
+    positionPanel();
 
     // Header
     panelContainer.appendChild(buildHeader());
@@ -481,7 +515,7 @@ var USE_DUMMY_DATA = true;
       } else if (state.activeTab === 'upload') {
         if (root.FormFlow.ui && typeof root.FormFlow.ui.renderUploadPanel === 'function') {
           root.FormFlow.ui.renderUploadPanel(body, {
-            useDummy: USE_DUMMY_DATA,
+            useDummy: getUseDummyData(),
             getProfile: function () {
               return state.profile;
             },
@@ -530,7 +564,7 @@ var USE_DUMMY_DATA = true;
       } else if (state.activeTab === 'photo') {
         if (root.FormFlow.ui && typeof root.FormFlow.ui.renderFixerPanel === 'function') {
           root.FormFlow.ui.renderFixerPanel(body, {
-            useDummy: USE_DUMMY_DATA
+            useDummy: getUseDummyData()
           });
         }
       }
@@ -576,6 +610,7 @@ var USE_DUMMY_DATA = true;
         hostElement.style.bottom = 'auto';
         hostElement.style.left = Math.max(12, Math.min(window.innerWidth - 180, initialLeft + dx)) + 'px';
         hostElement.style.top = Math.max(12, Math.min(window.innerHeight - 60, initialTop + dy)) + 'px';
+        positionPanel();
       }
     });
 
@@ -592,6 +627,8 @@ var USE_DUMMY_DATA = true;
       if (!hasMoved) {
         state.isOpen = !state.isOpen;
         render();
+      } else {
+        positionPanel();
       }
       hasMoved = false;
     });
@@ -605,16 +642,23 @@ var USE_DUMMY_DATA = true;
   /**
    * Mounts the widget into document.body inside an isolated closed ShadowRoot.
    * Calling mountWidget() again toggles visibility of the widget panel.
+   * Cleans up stray host elements to guarantee only one pill exists.
    *
    * @returns {HTMLElement} The host container attached to document.body.
    */
   function mountWidget() {
-    // If widget host already exists in the document, toggle panel visibility
-    var existingHost = document.getElementById('formflow-widget-host');
-    if (existingHost && shadowRoot) {
+    // If widget host already exists and is active, toggle panel visibility
+    if (hostElement && shadowRoot && document.body.contains(hostElement)) {
       state.isOpen = !state.isOpen;
+      positionPanel();
       render();
-      return existingHost;
+      return hostElement;
+    }
+
+    // Clean up any stray host elements from prior runs or duplicate injections
+    var strayHosts = document.querySelectorAll('#formflow-widget-host, [data-formflow-ui="true"]');
+    for (var s = 0; s < strayHosts.length; s++) {
+      strayHosts[s].remove();
     }
 
     // 1. Create host element

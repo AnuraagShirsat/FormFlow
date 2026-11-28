@@ -6,7 +6,7 @@ Operating directly on application portals via an isolated Shadow DOM floating wi
 - **Scans form fields** and identifies required supporting documents.
 - **Explains each field** in plain language across multiple languages (**English**, **Kannada**, and **Hindi**).
 - **Extracts student data** from uploaded documents using Google Gemini Vision via a secure, private local Node.js proxy.
-- **Provides a transparent review screen** highlighting fields by confidence (green = matched, red = missing or low confidence) so students remain in full control.
+- **Provides a transparent review screen** highlighting fields by confidence (green = confident match, amber = needs user review, red = missing data) so students remain in full control.
 - **Normalizes photo and signature uploads** to strictly meet portal file type and size constraints.
 - **Fills forms strictly on demand**: Form fields are populated ONLY when the student explicitly clicks "Fill Form". **It never auto-submits any form.**
 
